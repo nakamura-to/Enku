@@ -23,6 +23,43 @@ open System.Web.Http.Controllers
 open System.Web.Http.Dispatcher
 open Microsoft.FSharp.Reflection
 
+type ValidationResult<'R> =
+  | Success of 'R
+  | Failure of string
+
+type ValidatorResult<'R> =
+  | Valid of 'R
+  | Invalid of string
+
+type Validator<'V, 'R> = Validator of (string -> 'V -> ValidatorResult<'R>)
+
+[<RequireQualifiedAccess>]
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module internal Validator =
+
+  let first = Validator(fun name values -> 
+    match values with
+    | [] -> Invalid (sprintf "%s is not found" name)
+    | h :: _ -> Valid h)
+
+  let string = Validator(fun name value ->
+    Valid (string (box value)))
+
+  let int = Validator(fun name value ->
+    match Int32.TryParse value with
+    | true, n -> Valid n
+    | _ -> Invalid (sprintf "%s is not int" name))
+
+type ValidationBuilder() = 
+  member this.Return(x) = Success(x)
+  member this.ReturnFrom(x: ValidationResult<'T>) = x
+  member this.Zero() =  this.Return()
+  member this.Bind(m, f) =  
+    match m with
+    | Success out -> f out
+    | Failure message -> Failure message
+  member this.Delay(f) = this.Bind(this.Return(), f)
+
 type ActionResult<'T> = 
   /// complete the current action
   | Completion of 'T
@@ -86,7 +123,6 @@ type ActionBuilder(kind) =
 module Directives =
 
   let defaultAround = fun req f -> f req
-
   let get = ActionBuilder(Single(HttpMethod.Get, defaultAround))
   let post = ActionBuilder(Single(HttpMethod.Post, defaultAround))
   let put = ActionBuilder(Single(HttpMethod.Put, defaultAround))
@@ -95,7 +131,27 @@ module Directives =
   let options = ActionBuilder(Single(HttpMethod.Options, defaultAround))
   let trace = ActionBuilder(Single(HttpMethod.Trace, defaultAround))
   let patch = ActionBuilder(Single(HttpMethod("PATCH"), defaultAround))
-  let any = new ActionBuilder(Any defaultAround)
+  let any = ActionBuilder(Any defaultAround)
+
+  let validation = ValidationBuilder()
+  let (>>>) (Validator(x)) (Validator(y)) = Validator(fun name value ->
+      match x name value with
+      | Valid ret -> y name ret
+      | Invalid msg -> Invalid msg)
+
+[<RequireQualifiedAccess>]
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module Request =
+
+  let fromQuery (req: HttpRequestMessage) (Validator(validator)) name =
+    let values =
+      req.GetQueryNameValuePairs()
+      |> Seq.filter (fun (KeyValue(key, value)) -> name = key)
+      |> Seq.map (fun (KeyValue(_, value)) -> value)
+      |> Seq.toList
+    match validator name values with
+    | Valid ret -> Success ret
+    | Invalid msg -> Failure msg
 
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
