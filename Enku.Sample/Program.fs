@@ -68,7 +68,7 @@ route "path/04" <| fun req ->
     printfn "after: GET path/04"
     result
   [ 
-    get.around(log)
+    get.around log
       { printfn "action: GET path/04"
         return {name = "foo"; age = 20} }
   ]
