@@ -40,7 +40,7 @@ type Person = { name: string; age: int}
 route "path/01/{?id}" <| fun req -> 
   [ 
     post
-      { return 10 }
+      { return {name = "hoge"; age = 20} }
     get
       { return {name = "hoge"; age = 20} }
   ]
@@ -82,7 +82,7 @@ async {
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
   printfn "sample01: %A" content 
 
-  use! response = Async.AwaitTask <| client.PostAsync("path/01", new StringContent(""))
+  use! response = Async.AwaitTask <| client.PostAsJsonAsync("path/01", @"{ ""test"": 10}")
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
   printfn "sample02: %A" content 
 

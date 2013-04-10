@@ -50,8 +50,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assert.fs" />
-    <Compile Include="CoreTest.fs" />
-    <Compile Include="Validation.fs" />
+    <Compile Include="ActionTest.fs" />
+    <Compile Include="RequestTest.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

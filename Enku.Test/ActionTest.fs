@@ -23,38 +23,38 @@ module ActionTest =
   let ``the action should be completed``() =
     let action = get { return 10 } 
     use req = new HttpRequestMessage(HttpMethod.Get, "person/1")
-    Action.run action req |> isEqualTo (Completion (box 10))
+    Action.run req action |> isEqualTo (Completion (box 10))
 
     let action = post { return 10 } 
     use req = new HttpRequestMessage(HttpMethod.Post, "person")
-    Action.run action req |> isEqualTo (Completion (box 10))
+    Action.run req action |> isEqualTo (Completion (box 10))
 
     let action = any { return 10 } 
     use req = new HttpRequestMessage(HttpMethod.Head, "person")
-    Action.run action req |> isEqualTo (Completion (box 10))
+    Action.run req action |> isEqualTo (Completion (box 10))
 
   [<Test>]
   let ``the action should be skipped``() =
     let action = get { return 10 } 
     use req = new HttpRequestMessage(HttpMethod.Post, "person")
-    Action.run action req |> isEqualTo Skip
+    Action.run req action |> isEqualTo Skip
 
     let action = post { return 10 } 
     use req = new HttpRequestMessage(HttpMethod.Get, "person/1")
-    Action.run action req |> isEqualTo Skip
+    Action.run req action |> isEqualTo Skip
 
     let action = get {
-      do! Routing.skip
+      do! Request.skip
       return 10 } 
     use req = new HttpRequestMessage(HttpMethod.Get, "person/1")
-    Action.run action req |> isEqualTo Skip
+    Action.run req action |> isEqualTo Skip
 
   [<Test>]
   let ``the composite action should be completed``() =
     let action = (get <|> post) { return 10 } 
     
     use req = new HttpRequestMessage(HttpMethod.Get, "person/1")
-    Action.run action req |> isEqualTo (Completion (box 10))
+    Action.run req action |> isEqualTo (Completion (box 10))
 
     use req = new HttpRequestMessage(HttpMethod.Post, "person")
-    Action.run action req |> isEqualTo (Completion (box 10))
+    Action.run req action |> isEqualTo (Completion (box 10))
