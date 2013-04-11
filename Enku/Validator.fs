@@ -27,7 +27,7 @@ type Validator<'V, 'R> = Validator of (string -> 'V option -> ValidationResult<'
 
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module internal Validator =
+module Validator =
 
   let head = Validator(fun name values ->
     match values with

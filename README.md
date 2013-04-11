@@ -7,17 +7,19 @@ Enku provides Web API in a F#-way.
 - Functional
 
 ```fsharp
-route "example/{?id}" <| fun req -> 
+route "example/{?id}" <| fun req res -> 
   [ 
-    get
-      { return "Accept GET" }
-    (put <|> post)
-      { return "Accept PUT or POST"}
-    delete
-      { return async 
-          { return "Accept DELETE and process asynchronously" } }
-    any
-      { return "Accept Any HTTP Methods" }
+    get <| async {
+      return res.ok "Accept GET" [] }
+
+    (put <|> post) <| {
+      return res.ok "Accept PUT or POST" [] }
+
+    delete <| async {
+      return res.ok "Accept DELETE" [] }
+
+    any <| async {
+      return res.ok "Accept any HTTP methods" [] }
   ]
 ```
 

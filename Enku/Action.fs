@@ -14,76 +14,43 @@ namespace Enku
 
 open System.Net.Http
 
-type ActionResult<'T> = 
-  /// complete the current action
-  | Completion of 'T
-  /// skip the current action and go to the next one
+type ActionResult = 
+  | Completion of  Async<HttpResponseMessage>
   | Skip
 
-type Action<'T> = Action of (HttpRequestMessage -> ActionResult<'T>)
+type Action = Action of (Request -> Response -> ActionResult)
 
-type AroundFun<'T> = HttpRequestMessage -> (HttpRequestMessage -> ActionResult<'T>) -> ActionResult<'T>
-
-type ActionKind<'T> =
-  | Single of HttpMethod * AroundFun<'T>
-  | Any of AroundFun<'T>
-  | Alternative of ActionKind<'T> list
+type Behavior =  Async<HttpResponseMessage> -> Action
 
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module internal Action =
-  let run req (Action(f)) = f req
+module Action = 
 
-type ActionBuilder(kind) = 
-  member this.ActionKind = kind
-  member this.Return(x) = Action(fun _ -> Completion(box x))
-  member this.ReturnFrom(m: Action<_>) = m
-  member this.Zero() =  this.Return()
-  member this.Bind(m, f) = Action(fun req -> 
-    match Action.run req m with
-    | Completion out -> Action.run req (f out)
-    | _ -> Skip)
-  member this.Delay(f) = this.Bind(this.Return(), f)
-  member this.Run(f) = Action(fun req ->
-    let run around = around req (fun req -> Action.run req f)
-    let rec loop kind =
-      match kind with
-      | Any around -> run around
-      | Single(method_, around) when method_ = req.Method -> run around
-      | Single _ -> Skip
-      | Alternative(kinds) -> 
-        kinds 
-        |> List.tryPick (fun kind ->
-          match loop kind with
-          | Completion result -> Some result
-          | _ -> None)
-        |> function
-        | Some result -> Completion result
-        | _ -> Skip
-    loop kind)
-  member this.around(f) =
-    let compose g = fun req action -> g req (fun req -> f req action)
-    let rec loop kind =
-      match kind with
-      | Single(method_, g) -> Single(method_, compose(g))
-      | Any(g) -> Any(compose(g))
-      | Alternative(kinds) -> 
-        Alternative(kinds |> List.map loop)
-    let kind = loop this.ActionKind
-    ActionBuilder(kind)
-  static member (<|>) (x: ActionBuilder, y: ActionBuilder) =
-    ActionBuilder(Alternative [x.ActionKind; y.ActionKind])
+  let make predicate operation = Action(fun (Request req) (Response res) ->
+    if predicate req then
+      Completion operation
+    else 
+      Skip)
+
+  let run req res (Action f) = f req res
 
 [<AutoOpen>]
 module ActionDirectives =
 
-  let defaultAround = fun req f -> f req
-  let get = ActionBuilder(Single(HttpMethod.Get, defaultAround))
-  let post = ActionBuilder(Single(HttpMethod.Post, defaultAround))
-  let put = ActionBuilder(Single(HttpMethod.Put, defaultAround))
-  let delete = ActionBuilder(Single(HttpMethod.Delete, defaultAround))
-  let head = ActionBuilder(Single(HttpMethod.Head, defaultAround))
-  let options = ActionBuilder(Single(HttpMethod.Options, defaultAround))
-  let trace = ActionBuilder(Single(HttpMethod.Trace, defaultAround))
-  let patch = ActionBuilder(Single(HttpMethod("PATCH"), defaultAround))
-  let any = ActionBuilder(Any defaultAround)
+  let private isTargetRequest m (req: HttpRequestMessage) = req.Method = m
+
+  let get = Action.make (isTargetRequest HttpMethod.Get)
+  let post = Action.make (isTargetRequest HttpMethod.Post)
+  let put = Action.make (isTargetRequest HttpMethod.Put)
+  let delete = Action.make (isTargetRequest HttpMethod.Delete)
+  let head = Action.make (isTargetRequest HttpMethod.Head)
+  let options = Action.make (isTargetRequest HttpMethod.Options)
+  let trace = Action.make (isTargetRequest HttpMethod.Trace)
+  let patch = Action.make (isTargetRequest <| HttpMethod "PATCH")
+  let any = Action.make (fun _ -> true)
+
+  let (<|>) (x: Behavior) (y: Behavior) = fun operation ->
+    Action(fun req res ->
+      match Action.run req res (x operation) with
+      | Skip -> Action.run req res (y operation)
+      | completion -> completion )

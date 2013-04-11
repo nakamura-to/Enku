@@ -13,27 +13,17 @@
 namespace Enku
 
 open System
+open System.Collections.Specialized
+open System.Collections.Generic
+open System.Net
 open System.Net.Http
 open System.Net.Http.Formatting
 
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module Request =
+module internal Validation =
 
-  exception internal ValidationError of string
-
-  /// skips the current action
-  let skip = Action(fun _ -> Skip)
-
-  /// skips the current action if the request is not with XMLHttpRequest
-  let skipIfNonAjax = Action(fun req ->
-    match req.Headers.TryGetValues("X-Requested-With") with
-    | true, values -> 
-      if values |> Seq.exists ((=) "XMLHttpRequest") then
-        Completion()
-      else
-        Skip
-    | _ -> Skip)
+  exception ValidationError of string
 
   let private key_enkuValidators = "enku_validators"
 
@@ -46,12 +36,12 @@ module Request =
       | _ -> []
     req.Properties.Add(key_enkuValidators, validator :: functions)
 
-  let private getValidators (req: HttpRequestMessage) =
+  let getValidators (req: HttpRequestMessage) =
     match req.Properties.TryGetValue key_enkuValidators with
     | true, lazyFunctions -> lazyFunctions :?> (unit -> unit) list
     | _ -> []
 
-  let private runValidator validator =
+  let runValidator validator =
     try
       validator()
       None
@@ -59,26 +49,68 @@ module Request =
     | ValidationError msg -> Some msg
 
   /// validates request parameters
-  let validate resultHandler = Action(fun req -> 
+  let validate resultHandler req =
     let result = 
       getValidators req
       |> List.rev
       |> List.choose runValidator
-    Completion <| resultHandler result)
+    resultHandler result
 
-  let private deferValidation (req: HttpRequestMessage) validator name value =
+  let deferValidation (req: HttpRequestMessage) validator name value =
     let lazyFun = lazy (
       match validator name value with
       | Valid ret -> ret
       | Invalid message -> raise <| ValidationError message)
     consValidator req (fun () -> lazyFun.Force() |> ignore)
-    Completion lazyFun
+    lazyFun
 
-  /// gets query string values as lazy
-  let queryString name (Validator(validator)) = Action(fun req ->
-    req.GetQueryNameValuePairs()
-    |> Seq.filter (fun (KeyValue(key, value)) -> name = key)
+type Form = Form of HttpRequestMessage * FormDataCollection with
+  member this.Value key (Validator validator) =
+    let (Form(req, pairs)) = this
+    pairs
+    |> Seq.filter (fun (KeyValue(k, value)) -> k = key)
     |> Seq.map (fun (KeyValue(_, value)) -> value)
     |> Seq.toList
     |> Some
-    |> deferValidation req validator name)
+    |> Validation.deferValidation req validator key
+
+type QueryString = QueryString of HttpRequestMessage * KeyValuePair<string, string> seq with
+  member this.Value key (Validator validator) =
+    let (QueryString(req, pairs)) = this
+    pairs
+    |> Seq.filter (fun (KeyValue(k, value)) -> k = key)
+    |> Seq.map (fun (KeyValue(_, value)) -> value)
+    |> Seq.toList
+    |> Some
+    |> Validation.deferValidation req validator key
+
+type Request = Request of HttpRequestMessage with
+  member this.AsyncReadAsString() =
+    let (Request req) = this
+    Async.AwaitTask <| req.Content.ReadAsStringAsync()
+  member this.AsyncReadAsStream() =
+    let (Request req) = this
+    Async.AwaitTask <| req.Content.ReadAsStreamAsync()
+  member this.AsyncReadAsBytes() =
+    let (Request req) = this
+    Async.AwaitTask <| req.Content.ReadAsByteArrayAsync()
+  member this.AsyncReadAsForm() = async {
+    let (Request req) = this
+    let! form = Async.AwaitTask <| req.Content.ReadAsAsync<FormDataCollection>()
+    return Form(req, form) }
+  member this.QueryString = 
+    let (Request req) = this
+    QueryString <| (req, req.GetQueryNameValuePairs())
+  /// validates request parameters
+  member this.Validate resultHandler =
+    let (Request req) = this
+    let result = 
+      Validation.getValidators req
+      |> List.rev
+      |> List.choose Validation.runValidator
+    resultHandler result
+
+type Response = Response of HttpRequestMessage with
+  member this.ok value headers =
+    let (Response req) = this
+    req.CreateResponse(HttpStatusCode.OK, value)

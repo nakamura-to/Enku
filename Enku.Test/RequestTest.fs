@@ -14,31 +14,25 @@ module RequestTest =
 
   [<Test>]
   let ``Request.validate should eval lazy values``() =
-    use req = new HttpRequestMessage(RequestUri = Uri("http://example/person?id=10&name=hoge"))
-    get { 
-      let! id = Request.queryString "id" (V.head + V.int + V.required)
-      let! name = Request.queryString "name" (V.head + V.string + V.required)
-      do! Request.validate <| function
+    let req = Request <| new HttpRequestMessage(RequestUri = Uri("http://example/person?id=10&name=hoge"))
+    let qs = req.QueryString
+    let id = qs.Value "id" (V.head + V.int + V.required)
+    let name = qs.Value "name" (V.head + V.string + V.required)
+    req.Validate <| function
         | [] ->
           id.Value |> isEqualTo 10
           name.Value |> isEqualTo "hoge"
-        | h :: _ -> failwith h }
-    |> Action.run req
-    |> function
-    | Completion _ -> ()
-    | _ -> failwith "fail"
+        | h :: _ -> failwith h
+    |> ignore
 
   [<Test>]
   let ``Request.validate should produce validation error messages``() =
-    use req = new HttpRequestMessage(RequestUri = Uri("http://example/person?id=foo&name=hoge&age=bar"))
-    get { 
-      let! id = Request.queryString "id" (V.head + V.int + V.required)
-      let! name = Request.queryString "name" (V.head + V.string + V.required)
-      let! age = Request.queryString "age" (V.head + V.int + V.required)
-      do! Request.validate <| function
-        | [] -> failwith "validatioin should be fail"
-        | messages -> List.length messages |> isEqualTo 2}
-    |> Action.run req
-    |> function
-    | Completion _ -> ()
-    | _ -> failwith "fail"
+    let req = Request <| new HttpRequestMessage(RequestUri = Uri("http://example/person?id=foo&name=hoge&age=bar"))
+    let qs = req.QueryString
+    let id = qs.Value "id" (V.head + V.int + V.required)
+    let name = qs.Value "name" (V.head + V.string + V.required)
+    let age = qs.Value "age" (V.head + V.int + V.required)
+    req.Validate <| function
+      | [] -> failwith "validatioin should be fail"
+      | messages -> List.length messages |> isEqualTo 2
+    |> ignore

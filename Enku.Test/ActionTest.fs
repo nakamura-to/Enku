@@ -21,40 +21,38 @@ module ActionTest =
 
   [<Test>]
   let ``the action should be completed``() =
-    let action = get { return 10 } 
-    use req = new HttpRequestMessage(HttpMethod.Get, "person/1")
-    Action.run req action |> isEqualTo (Completion (box 10))
+    let content = new StringContent("hoge") :> HttpContent
+    use req =  new HttpRequestMessage(HttpMethod.Get, "person/1")
+    let action = get <| async { 
+      return new HttpResponseMessage(Content = content) }
+    match Action.run (Request req) (Response req) action with
+    | Completion result ->
+      let res = Async.RunSynchronously result
+      res.Content |> isEqualTo content
+    | Skip -> failwith "fail"
 
-    let action = post { return 10 } 
     use req = new HttpRequestMessage(HttpMethod.Post, "person")
-    Action.run req action |> isEqualTo (Completion (box 10))
-
-    let action = any { return 10 } 
-    use req = new HttpRequestMessage(HttpMethod.Head, "person")
-    Action.run req action |> isEqualTo (Completion (box 10))
+    let action = post <| async { 
+      return new HttpResponseMessage(Content = content) }
+    match Action.run (Request req) (Response req) action with
+    | Completion result ->
+      let res = Async.RunSynchronously result
+      res.Content |> isEqualTo content
+    | Skip -> failwith "fail"
 
   [<Test>]
   let ``the action should be skipped``() =
-    let action = get { return 10 } 
-    use req = new HttpRequestMessage(HttpMethod.Post, "person")
-    Action.run req action |> isEqualTo Skip
-
-    let action = post { return 10 } 
     use req = new HttpRequestMessage(HttpMethod.Get, "person/1")
-    Action.run req action |> isEqualTo Skip
-
-    let action = get {
-      do! Request.skip
-      return 10 } 
-    use req = new HttpRequestMessage(HttpMethod.Get, "person/1")
-    Action.run req action |> isEqualTo Skip
-
-  [<Test>]
-  let ``the composite action should be completed``() =
-    let action = (get <|> post) { return 10 } 
-    
-    use req = new HttpRequestMessage(HttpMethod.Get, "person/1")
-    Action.run req action |> isEqualTo (Completion (box 10))
+    let action = post <| async { 
+      return new HttpResponseMessage(Content = new StringContent("hoge")) }
+    match Action.run (Request req) (Response req) action with
+    | Completion result -> failwith "fail"
+    | Skip -> ()
 
     use req = new HttpRequestMessage(HttpMethod.Post, "person")
-    Action.run req action |> isEqualTo (Completion (box 10))
+    let action = get <| async { 
+      return new HttpResponseMessage(Content = new StringContent("hoge")) }
+    match Action.run (Request req) (Response req) action with
+    | Completion result -> failwith "fail"
+    | Skip -> ()
+

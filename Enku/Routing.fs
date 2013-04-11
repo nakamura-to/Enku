@@ -29,53 +29,23 @@ open Microsoft.FSharp.Reflection
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Routing =
 
-  let internal isAsync (typ: Type) =
-    typ.IsGenericType && 
-    typ.GetGenericTypeDefinition().FullName = "Microsoft.FSharp.Control.FSharpAsync`1"
-
   let internal makeHandler controller = 
-    let bindAsync src (req: HttpRequestMessage) =
-      let srcType = src.GetType().GetGenericArguments().[0]
-      let destType = typeof<Async<HttpResponseMessage>>
-      let binderType = FSharpType.MakeFunctionType(srcType, destType)
-      let binder = FSharpValue.MakeFunction(binderType, fun obj -> 
-        box <|
-          match obj with
-          | :? HttpResponseMessage as res -> async.Return res
-          | _ as any -> async.Return <| req.CreateResponse(HttpStatusCode.OK, any))
-      let bindMethod = async.GetType().GetMethod("Bind").MakeGenericMethod([|srcType; typeof<HttpResponseMessage>|])
-      bindMethod.Invoke(async, [| src; binder |]) :?> Async<HttpResponseMessage>
-      
     { new HttpMessageHandler() with
-      override this.SendAsync(req, token) = 
-//        let readContent = 
-//          if req.Content = null then
-//            let tcs = TaskCompletionSource<Hashtable>();
-//            tcs.SetResult(Hashtable())
-//            tcs.Task
-//          else
-//            let formatters = req.GetConfiguration().Formatters
-//            req.Content.ReadAsAsync<Hashtable>(formatters)
-        let computation = async {
-//          let! formData = Async.AwaitTask readContent
-          let actionResult = 
-            controller req 
-            |> List.fold (fun state action -> 
-              match state with
-              | Skip -> Action.run req action
-              | _ -> state) Skip
-        return!
-          match actionResult with
-          | Completion result ->
-            match box result with
-            | :? Async<HttpResponseMessage> as async-> async
-            | :? HttpResponseMessage as res -> async { return res }
-            | _ as result ->
-              if result <> null && isAsync (result.GetType()) then bindAsync result req
-              else async { return req.CreateResponse(HttpStatusCode.OK, result) }
-          | _ -> 
-            async { return new HttpResponseMessage(HttpStatusCode.NotFound) }}
-        Async.StartAsTask(computation = computation, cancellationToken = token) }
+      override this.SendAsync(request, token) = 
+        let req = Request request
+        let res = Response request
+        let operation = async {
+          let! response = 
+            controller req res
+            |> List.tryPick (fun action ->
+              match Action.run req res action with
+              | Completion operation -> Some operation
+              | Skip -> None)
+            |> function 
+            | Some operation -> operation
+            | _ -> async {return new HttpResponseMessage(HttpStatusCode.NotFound)}
+          return response }
+        Async.StartAsTask(computation = operation, cancellationToken = token) }
   
   let regex = Regex(@"{\?(?<optional>[^}]*)}") 
 
@@ -93,4 +63,3 @@ module Routing =
       defaults = defaults,
       constraints = null,
       handler = makeHandler controller) |> ignore
-

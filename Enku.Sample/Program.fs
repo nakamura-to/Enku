@@ -21,6 +21,7 @@
 module Program
 
 open System
+open System.Net.Http.Formatting
 open System.Net.Http
 open System.Web.Http
 open System.Web.Http.SelfHost
@@ -37,40 +38,52 @@ let route = Routing.route config
 type Person = { name: string; age: int}
 
 // normal
-route "path/01/{?id}" <| fun req -> 
+route "path/01/{?id}" <| fun req res -> 
   [ 
-    post
-      { return {name = "hoge"; age = 20} }
-    get
-      { return {name = "hoge"; age = 20} }
+    post <| async {
+      return res.ok {name = "post"; age = 20} [] }
+
+    get <| async {
+      return res.ok {name = "get"; age = 20} [] } 
   ]
 
 // action alternatives
-route "path/02" <| fun req -> 
+route "path/02" <| fun req res -> 
   [ 
-    (get <|> post)
-      { return {name = "foo"; age = 20} }
+    (get <|> post) <| async {
+      return res.ok {name = "foo"; age = 20} [] } 
   ]
 
-// async action
-route "path/03" <| fun req -> 
-  [ 
-    get
-      { return async { 
-          return {name = "foo"; age = 20} } }
-  ]
-
-// do something around an action
-route "path/04" <| fun req -> 
-  let log req action =
+// do something around an operation
+route "path/04" <| fun req res -> 
+  let log req res operation = async {
     printfn "before: GET path/04"
-    let result = action req
+    let! result = operation
     printfn "after: GET path/04"
-    result
+    return result }
   [ 
-    get.around log
-      { printfn "action: GET path/04"
-        return {name = "foo"; age = 20} }
+    get |> Advice.around log <| async {
+      printfn "main: GET path/04"
+      return res.ok {name = "foo"; age = 20} [] } 
+  ]
+
+route "path/05" <| fun req res -> 
+  [ 
+    post <| async {
+      let! content = req.AsyncReadAsString ()
+      return res.ok content [] }
+  ]
+
+route "path/06" <| fun req res -> 
+  let raiseFirst = function  [] -> () | h :: _ -> failwith h
+  [ 
+    post <| async {
+      let! form = req.AsyncReadAsForm ()
+      let aaa = form.Value "aaa" (Validator.head + Validator.required)
+      let bbb = form.Value "bbb" (Validator.head + Validator.required)
+      let ccc = form.Value "ccc" (Validator.head + Validator.required)
+      req.Validate raiseFirst
+      return res.ok (aaa.Value + bbb.Value + ccc.Value) [] }
   ]
 
 async {
@@ -94,13 +107,19 @@ async {
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
   printfn "sample04: %A" content 
 
-  use! response = Async.AwaitTask <| client.GetAsync("path/03")
-  let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
-  printfn "sample05: %A" content
-
   use! response = Async.AwaitTask <| client.GetAsync("path/04")
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
   printfn "sample06: %A" content
+
+  use! response = Async.AwaitTask <| client.PostAsync("path/05", new StringContent("echo"))
+  let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
+  printfn "sample07: %A" content
+
+  let pairs = dict ["aaa", "xxx"; "bbb", "yyy"; "ccc", "zzz"]
+  use! response = Async.AwaitTask <| client.PostAsync("path/06", new FormUrlEncodedContent(pairs))
+  let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
+  printfn "sample08: %A" content
+
 }
 |> Async.RunSynchronously
 
