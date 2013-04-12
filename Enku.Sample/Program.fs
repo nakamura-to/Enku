@@ -37,47 +37,48 @@ let route = Routing.route config
 
 type Person = { name: string; age: int}
 
+let log req res operation = async {
+  printfn "BEFORE"
+  let! result = operation req res
+  printfn "AFTER"
+  return result }
+
 // normal
-route "path/01/{?id}" <| fun req res -> 
+route "path/01/{?id}" <| fun _ -> 
   [ 
-    post <| async {
+    post, fun req res -> async {
       return res.ok {name = "post"; age = 20} [] }
 
-    get <| async {
+    get, fun req res -> async {
       return res.ok {name = "get"; age = 20} [] } 
   ]
 
 // action alternatives
-route "path/02" <| fun req res -> 
+route "path/02" <| fun _ -> 
   [ 
-    (get <|> post) <| async {
+    (get <|> post), fun req res -> async {
       return res.ok {name = "foo"; age = 20} [] } 
   ]
 
 // do something around an operation
-route "path/04" <| fun req res -> 
-  let log req res operation = async {
-    printfn "before: GET path/04"
-    let! result = operation
-    printfn "after: GET path/04"
-    return result }
+route "path/04" <| fun _ -> 
   [ 
-    get |> Advice.around log <| async {
-      printfn "main: GET path/04"
+    get, Advice.around log <| fun req res -> async {
+      printfn "MAIN: GET path/04"
       return res.ok {name = "foo"; age = 20} [] } 
   ]
 
-route "path/05" <| fun req res -> 
+route "path/05" <| fun _ -> 
   [ 
-    post <| async {
+    post, fun req res -> async {
       let! content = req.AsyncReadAsString()
       return res.ok content [] }
   ]
 
-route "path/06" <| fun req res -> 
+route "path/06" <| fun _ -> 
   let raiseFirst = function  [] -> () | h :: _ -> failwith h
   [ 
-    post <| async {
+    post, fun req res ->  async {
       let! form = req.AsyncReadAsForm()
       let vc = ValidationContext()
       let aaa = vc.Add(form, "aaa", Validator.head + Validator.required)
@@ -86,6 +87,18 @@ route "path/06" <| fun req res ->
       vc.Eval() |> raiseFirst
       return res.ok (aaa.Value + bbb.Value + ccc.Value) [] }
   ]
+
+route "path/07/{?id}" <| fun _ -> 
+    Advice.aroundAll log <|
+    [ 
+      post, fun req res -> async {
+        printfn "MAIN: POST path/07"
+        return res.ok {name = "post"; age = 20} [] }
+
+      get, fun req res -> async {
+        printfn "MAIN: GET path/07"
+        return res.ok {name = "get"; age = 20} [] } 
+    ]
 
 async {
   use server = new HttpSelfHostServer(config)
@@ -121,6 +134,13 @@ async {
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
   printfn "sample08: %A" content
 
+  use! response = Async.AwaitTask <| client.GetAsync("path/07/abc")
+  let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
+  printfn "sample09: %A" content 
+
+  use! response = Async.AwaitTask <| client.PostAsJsonAsync("path/07", @"{ ""test"": 10}")
+  let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
+  printfn "sample10: %A" content 
 }
 |> Async.RunSynchronously
 

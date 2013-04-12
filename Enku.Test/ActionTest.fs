@@ -23,18 +23,18 @@ module ActionTest =
   let ``the action should be completed``() =
     let content = new StringContent("hoge") :> HttpContent
     use req =  new HttpRequestMessage(HttpMethod.Get, "person/1")
-    let action = get <| async { 
+    let action, operation = get, fun req res -> async { 
       return new HttpResponseMessage(Content = content) }
-    match Action.run (Request req) (Response req) action with
+    match Action.run (Request req) (Response req) operation action with
     | Completion result ->
       let res = Async.RunSynchronously result
       res.Content |> isEqualTo content
     | Skip -> failwith "fail"
 
     use req = new HttpRequestMessage(HttpMethod.Post, "person")
-    let action = post <| async { 
+    let action, operation = post, fun req res ->  async { 
       return new HttpResponseMessage(Content = content) }
-    match Action.run (Request req) (Response req) action with
+    match Action.run (Request req) (Response req) operation action with
     | Completion result ->
       let res = Async.RunSynchronously result
       res.Content |> isEqualTo content
@@ -43,16 +43,16 @@ module ActionTest =
   [<Test>]
   let ``the action should be skipped``() =
     use req = new HttpRequestMessage(HttpMethod.Get, "person/1")
-    let action = post <| async { 
+    let action, operation= post, fun req res -> async { 
       return new HttpResponseMessage(Content = new StringContent("hoge")) }
-    match Action.run (Request req) (Response req) action with
+    match Action.run (Request req) (Response req) operation action with
     | Completion result -> failwith "fail"
     | Skip -> ()
 
     use req = new HttpRequestMessage(HttpMethod.Post, "person")
-    let action = get <| async { 
+    let action, operation = get, fun req res -> async { 
       return new HttpResponseMessage(Content = new StringContent("hoge")) }
-    match Action.run (Request req) (Response req) action with
+    match Action.run (Request req) (Response req) operation action with
     | Completion result -> failwith "fail"
     | Skip -> ()
 

@@ -17,8 +17,8 @@ open System.Net.Http
 
 module Advice =
 
-  let around f behavior (operation: Async<HttpResponseMessage>) = Action(fun req res ->
-    let action = behavior operation
-    match Action.run req res action with
-    | Completion innerOperation -> Completion <| f req res innerOperation
-    | Skip -> Skip)
+  let around f operation = (fun req res -> f req res operation)
+
+  let aroundAll f pairs = 
+    pairs|> List.map (fun (action, operation) -> action, around f operation)
+

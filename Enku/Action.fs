@@ -18,21 +18,21 @@ type ActionResult =
   | Completion of  Async<HttpResponseMessage>
   | Skip
 
-type Action = Action of (Request -> Response -> ActionResult)
+type Operation = (Request -> Response -> Async<HttpResponseMessage>)
 
-type Behavior =  Async<HttpResponseMessage> -> Action
+type Action = Action of (Request -> Response -> Operation -> ActionResult)
 
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Action = 
 
-  let make predicate operation = Action(fun (Request req) (Response res) ->
+  let make predicate = Action(fun (Request req) res operation ->
     if predicate req then
-      Completion operation
+      Completion <| operation (Request req) res
     else 
       Skip)
 
-  let run req res (Action f) = f req res
+  let run req res operation (Action f) = f req res operation
 
 [<AutoOpen>]
 module ActionDirectives =
@@ -49,8 +49,7 @@ module ActionDirectives =
   let patch = Action.make (isTargetRequest <| HttpMethod "PATCH")
   let any = Action.make (fun _ -> true)
 
-  let (<|>) (x: Behavior) (y: Behavior) = fun operation ->
-    Action(fun req res ->
-      match Action.run req res (x operation) with
-      | Skip -> Action.run req res (y operation)
+  let (<|>) (x: Action) (y: Action) = Action(fun req res operation ->
+      match Action.run req res operation x with
+      | Skip -> Action.run req res operation y
       | completion -> completion )

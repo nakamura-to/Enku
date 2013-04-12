@@ -36,9 +36,9 @@ module Routing =
         let res = Response request
         let operation = async {
           let! response = 
-            controller req res
-            |> List.tryPick (fun action ->
-              match Action.run req res action with
+            controller ()
+            |> List.tryPick (fun (action, operation) ->
+              match Action.run req res operation action with
               | Completion operation -> Some operation
               | Skip -> None)
             |> function 
