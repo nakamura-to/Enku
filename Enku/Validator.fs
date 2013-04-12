@@ -15,16 +15,6 @@ namespace Enku
 open System
 open System.Net.Http
 
-type ValidationResult<'R> =
-  | Valid of 'R
-  | Invalid of string
-
-type Validator<'V, 'R> = Validator of (string -> 'V option -> ValidationResult<'R>) with
-  static member (>>=) (Validator(x), Validator(y)) = Validator(fun name value ->
-    match x name value with
-    | Valid ret -> y name ret
-    | Invalid msg -> Invalid msg)
-
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Validator =
@@ -33,10 +23,10 @@ module Validator =
     match values with
     | Some values ->
       match values with
-      | [] -> Invalid (sprintf format name)
-      | h :: _ -> Valid (Some h)
+      | [] -> Left (sprintf format name)
+      | h :: _ -> Right (Some h)
     | _ ->
-      Valid None
+      Right None
 
   let head = Validator(fun name values ->
     _head name values "%s is not found")
@@ -48,10 +38,10 @@ module Validator =
     match value with
     | Some value ->
       match Int32.TryParse (string (box value)) with
-      | true, n -> Valid (Some n)
-      | _ -> Invalid (sprintf format name)
+      | true, n -> Right (Some n)
+      | _ -> Left (sprintf format name)
     | _ ->
-      Valid None
+      Right None
 
   let int = Validator(fun name value ->
     _int name value "%s is not Int32")
@@ -64,11 +54,11 @@ module Validator =
     | Some s ->
       // TODO
       if String.length s >= max then
-        Invalid (sprintf format name max)
+        Left (sprintf format name max)
       else
-        Valid (Some s)
+        Right (Some s)
     | _ ->
-      Valid None
+      Right None
 
   let length max = Validator(fun name value ->
     _length max name value "%s is out of range (max=%A)")
@@ -81,13 +71,13 @@ module Validator =
     | Some n ->
       // TODO
       if n <= min then
-        Invalid (sprintf format name min max)
+        Left (sprintf format name min max)
       elif n >= max then
-        Invalid (sprintf format name min max)
+        Left (sprintf format name min max)
       else
-        Valid (Some n)
+        Right (Some n)
     | _ ->
-      Valid None
+      Right None
 
   let range min max = Validator(fun name value ->
     _range min max name value "%s is out of range (min=%A, max=%A)")
@@ -98,9 +88,9 @@ module Validator =
   let _required name value format =
     match value with
     | Some value -> 
-      Valid value
+      Right value
     | _ ->
-      Invalid (sprintf format name)
+      Left (sprintf format name)
 
   let required = Validator(fun name value ->
     _required name value "%s is required")
@@ -111,6 +101,6 @@ module Validator =
   let string = Validator(fun name value ->
     match value with
     | Some value ->
-      Valid (Some (string (box value)))
+      Right (Some (string (box value)))
     | _ ->
-      Valid None)
+      Right None)

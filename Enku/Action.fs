@@ -14,30 +14,23 @@ namespace Enku
 
 open System.Net.Http
 
-type ActionResult = 
-  | Completion of  Async<HttpResponseMessage>
-  | Skip
-
-type ActionBody = (Request -> Response -> Async<HttpResponseMessage>)
-
-type Action = Action of (Request -> Response -> ActionBody -> ActionResult)
-
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Action = 
 
-  let make predicate = Action(fun (Request req) res body ->
+  let make predicate = Action(fun req res body ->
     if predicate req then
-      Completion <| body (Request req) res
+      Right <| body req res
     else 
-      Skip)
+      Left())
 
-  let run req res operation (Action f) = f req res operation
+  let run req res body (Action f) = f req res body
 
 [<AutoOpen>]
 module ActionDirectives =
 
-  let private isTargetRequest m (req: HttpRequestMessage) = req.Method = m
+  let private isTargetRequest m (Request req) = 
+    req.Method = m
 
   let get = Action.make (isTargetRequest HttpMethod.Get)
   let post = Action.make (isTargetRequest HttpMethod.Post)
@@ -51,5 +44,5 @@ module ActionDirectives =
 
   let (<|>) (x: Action) (y: Action) = Action(fun req res body ->
       match Action.run req res body x with
-      | Skip -> Action.run req res body y
-      | completion -> completion )
+      | Left _ -> Action.run req res body y
+      | Right r -> Right r )

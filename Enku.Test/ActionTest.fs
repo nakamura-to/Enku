@@ -22,37 +22,45 @@ module ActionTest =
   [<Test>]
   let ``the action should be completed``() =
     let content = new StringContent("hoge") :> HttpContent
-    use req =  new HttpRequestMessage(HttpMethod.Get, "person/1")
+    use reqestMessage = new HttpRequestMessage(HttpMethod.Get, "person/1")
+    let req = Request reqestMessage
+    let res = Response reqestMessage
     let body = fun req res -> async { 
       return new HttpResponseMessage(Content = content) }
-    match Action.run (Request req) (Response req) body get with
-    | Completion result ->
-      let res = Async.RunSynchronously result
+    match Action.run req res body get with
+    | Right r ->
+      let res = Async.RunSynchronously r
       res.Content |> isEqualTo content
-    | Skip -> failwith "fail"
+    | Left _ -> failwith "fail"
 
-    use req = new HttpRequestMessage(HttpMethod.Post, "person")
+    use reqestMessage = new HttpRequestMessage(HttpMethod.Post, "person")
+    let req = Request reqestMessage
+    let res = Response reqestMessage
     let body = fun req res ->  async { 
       return new HttpResponseMessage(Content = content) }
-    match Action.run (Request req) (Response req) body post with
-    | Completion result ->
-      let res = Async.RunSynchronously result
+    match Action.run req res body post with
+    | Right r ->
+      let res = Async.RunSynchronously r
       res.Content |> isEqualTo content
-    | Skip -> failwith "fail"
+    | Left _ -> failwith "fail"
 
   [<Test>]
   let ``the action should be skipped``() =
-    use req = new HttpRequestMessage(HttpMethod.Get, "person/1")
+    use reqestMessage = new HttpRequestMessage(HttpMethod.Get, "person/1")
+    let req = Request reqestMessage
+    let res = Response reqestMessage
     let body = fun req res -> async { 
       return new HttpResponseMessage(Content = new StringContent("hoge")) }
-    match Action.run (Request req) (Response req) body post with
-    | Completion result -> failwith "fail"
-    | Skip -> ()
+    match Action.run req res body post with
+    | Right _ -> failwith "fail"
+    | Left _ -> ()
 
-    use req = new HttpRequestMessage(HttpMethod.Post, "person")
+    use reqestMessage = new HttpRequestMessage(HttpMethod.Post, "person")
+    let req = Request reqestMessage
+    let res = Response reqestMessage
     let body = fun req res -> async { 
       return new HttpResponseMessage(Content = new StringContent("hoge")) }
-    match Action.run (Request req) (Response req) body get with
-    | Completion result -> failwith "fail"
-    | Skip -> ()
+    match Action.run req res body get with
+    | Right _ -> failwith "fail"
+    | Left _ -> ()
 

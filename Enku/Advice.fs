@@ -14,6 +14,7 @@ namespace Enku
 
 open System.Net.Http
 
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Advice =
 
   let around (f: Request -> Response -> ActionBody -> Async<HttpResponseMessage>) body = 

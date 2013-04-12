@@ -28,21 +28,26 @@ module Routing =
       override this.SendAsync(requestMessage, token) = 
         let req = Request requestMessage
         let res = Response requestMessage
-        let tryPick (action, body) = 
+        let runAction (action, body) = 
           match Action.run req res body action with
-          | Completion result -> Some result
-          | Skip -> None
+          | Right r -> Some r
+          | Left _ -> None
+        let actions, (errHandler: ActionErrorHandler) = controller ()
         let computation = async {
-          let! responseMessage = 
-            controller ()
-            |> List.tryPick tryPick
-            |> function 
-            | Some result -> result
-            | _ -> async { return new HttpResponseMessage(HttpStatusCode.NotFound) }
-          return responseMessage }
+          try
+            let! responseMessage =
+              actions
+              |> List.tryPick runAction
+              |> function 
+              | Some result -> result
+              | _ -> async { return new HttpResponseMessage(HttpStatusCode.NotFound) }
+            return responseMessage
+          with e ->
+            let! responseMessage = errHandler req res e
+            return responseMessage }
         Async.StartAsTask(computation = computation, cancellationToken = token) }
   
-  let regex = Regex(@"{\?(?<optional>[^}]*)}") 
+  let internal regex = Regex(@"{\?(?<optional>[^}]*)}") 
 
   let route (config: HttpConfiguration) url controller =
     let defaults = Dictionary<string, obj>()

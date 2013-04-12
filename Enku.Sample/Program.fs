@@ -44,37 +44,45 @@ let log req res operation = async {
   finally
     printfn "AFTER" }
 
+let error = fun req (res: Response) e -> async {
+  // TODO
+  return res.OK "error" [] }
+
 // normal
-route "path/01/{?id}" <| fun _ -> 
+route "path/01/{?id}" <| fun _ ->
   [ 
     post, fun req res -> async {
-      return res.ok {name = "post"; age = 20} [] }
+      return res.OK {name = "post"; age = 20} [] }
 
     get, fun req res -> async {
-      return res.ok {name = "get"; age = 20} [] } 
-  ]
+      return res.OK {name = "get"; age = 20} [] } 
+  ], 
+  error
 
 // action alternatives
 route "path/02" <| fun _ -> 
   [ 
     get <|> post, fun req res -> async {
-      return res.ok {name = "foo"; age = 20} [] } 
-  ]
+      return res.OK {name = "foo"; age = 20} [] } 
+  ],
+  error
 
 // do something around an operation
 route "path/04" <| fun _ -> 
   [ 
     get, Advice.around log <| fun req res -> async {
       printfn "MAIN: GET path/04"
-      return res.ok {name = "foo"; age = 20} [] } 
-  ]
+      return res.OK {name = "foo"; age = 20} [] } 
+  ],
+  error
 
 route "path/05" <| fun _ -> 
   [ 
     post, fun req res -> async {
       let! content = req.AsyncReadAsString()
-      return res.ok content [] }
-  ]
+      return res.OK content [] }
+  ],
+  error
 
 route "path/06" <| fun _ -> 
   let raiseFirst = function  [] -> () | h :: _ -> failwith h
@@ -86,20 +94,22 @@ route "path/06" <| fun _ ->
       let bbb = vc.Add(form, "bbb", Validator.head >>= Validator.required)
       let ccc = vc.Add(form, "ccc", Validator.head >>= Validator.required)
       vc.Eval() |> raiseFirst
-      return res.ok (aaa.Value + bbb.Value + ccc.Value) [] }
-  ]
+      return res.OK (aaa.Value + bbb.Value + ccc.Value) [] }
+  ],
+  error
 
 route "path/07/{?id}" <| fun _ -> 
     Advice.aroundAll log <|
     [ 
       post, fun req res -> async {
         printfn "MAIN: POST path/07"
-        return res.ok {name = "post"; age = 20} [] }
+        return res.OK {name = "post"; age = 20} [] }
 
       get, fun req res -> async {
         printfn "MAIN: GET path/07"
-        return res.ok {name = "get"; age = 20} [] } 
-    ]
+        return res.OK {name = "get"; age = 20} [] } 
+    ],
+    error
 
 async {
   use server = new HttpSelfHostServer(config)
