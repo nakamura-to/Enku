@@ -18,71 +18,60 @@ open System.Collections.Generic
 open System.Net
 open System.Net.Http
 open System.Net.Http.Formatting
+open Microsoft.FSharp.Quotations
+open Microsoft.FSharp.Quotations.Patterns
 
-[<RequireQualifiedAccess>]
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module internal Validation =
+type KeyValuePairSeq = KeyValuePairSeq of KeyValuePair<string, string> seq
 
-  exception ValidationError of string
+exception ValidationError of string
 
-  let private key_enkuValidators = "enku_validators"
-
-  let private consValidator (req: HttpRequestMessage) validator =
-    let functions =
-      match req.Properties.TryGetValue key_enkuValidators with
-      | true, lazyFunctions -> 
-        req.Properties.Remove(key_enkuValidators) |> ignore
-        lazyFunctions :?> (unit -> unit) list
-      | _ -> []
-    req.Properties.Add(key_enkuValidators, validator :: functions)
-
-  let getValidators (req: HttpRequestMessage) =
-    match req.Properties.TryGetValue key_enkuValidators with
-    | true, lazyFunctions -> lazyFunctions :?> (unit -> unit) list
-    | _ -> []
-
-  let runValidator validator =
-    try
-      validator()
-      None
-    with
-    | ValidationError msg -> Some msg
-
-  /// validates request parameters
-  let validate resultHandler req =
-    let result = 
-      getValidators req
-      |> List.rev
-      |> List.choose runValidator
-    resultHandler result
-
-  let deferValidation (req: HttpRequestMessage) validator name value =
-    let lazyFun = lazy (
+type ValidationContext() =
+  let validatorWrappers = ResizeArray<unit -> unit>()
+  let addLazyValue (lazyValue: Lazy<_>) =
+    validatorWrappers.Add((fun () -> lazyValue.Force() |> ignore))
+  member private this.MakeLazyValue(validator, name, value) =
+    lazy (
       match validator name value with
       | Valid ret -> ret
       | Invalid message -> raise <| ValidationError message)
-    consValidator req (fun () -> lazyFun.Force() |> ignore)
-    lazyFun
+  member this.Add((KeyValuePairSeq pairs), key, (Validator validator)) =
+    let value =
+      pairs
+      |> Seq.filter (fun (KeyValue(k, value)) -> k = key)
+      |> Seq.map (fun (KeyValue(_, value)) -> value)
+      |> Seq.toList
+    let lazyValue = this.MakeLazyValue(validator, key, Some value)
+    addLazyValue lazyValue
+    lazyValue
+  member this.Add(expr: Expr<'T>, (Validator validator)) =
+    let addError message =
+      let lazyValue = lazy(raise <| ValidationError message)
+      addLazyValue lazyValue
+    match expr with
+    | PropertyGet(receiver, propInfo, _) ->
+      match receiver with
+      | Some receiver ->
+        match receiver with
+        | Value(receiver, _) ->
+          let key = propInfo.Name
+          let value = propInfo.GetValue(receiver, null) :?> 'T
+          let lazyValue = this.MakeLazyValue(validator, key, Some value)
+          addLazyValue lazyValue
+        |_ -> addError (sprintf "%A is not a Value expression" receiver)
+      |_ -> addError (sprintf "%A is not an instance property" propInfo.Name)
+    | _ ->
+      addError (sprintf "%A is not an instance property" expr)
 
-type Form = Form of HttpRequestMessage * FormDataCollection with
-  member this.Value key (Validator validator) =
-    let (Form(req, pairs)) = this
-    pairs
-    |> Seq.filter (fun (KeyValue(k, value)) -> k = key)
-    |> Seq.map (fun (KeyValue(_, value)) -> value)
+  member this.Eval() =
+    let runValidator validator =
+      try
+        validator()
+        None
+      with
+      | ValidationError msg -> Some msg
+    validatorWrappers
+    |> Seq.choose runValidator
     |> Seq.toList
-    |> Some
-    |> Validation.deferValidation req validator key
-
-type QueryString = QueryString of HttpRequestMessage * KeyValuePair<string, string> seq with
-  member this.Value key (Validator validator) =
-    let (QueryString(req, pairs)) = this
-    pairs
-    |> Seq.filter (fun (KeyValue(k, value)) -> k = key)
-    |> Seq.map (fun (KeyValue(_, value)) -> value)
-    |> Seq.toList
-    |> Some
-    |> Validation.deferValidation req validator key
 
 type Request = Request of HttpRequestMessage with
   member this.AsyncReadAsString() =
@@ -97,18 +86,10 @@ type Request = Request of HttpRequestMessage with
   member this.AsyncReadAsForm() = async {
     let (Request req) = this
     let! form = Async.AwaitTask <| req.Content.ReadAsAsync<FormDataCollection>()
-    return Form(req, form) }
-  member this.QueryString = 
+    return KeyValuePairSeq(form) }
+  member this.GetQueryString() = 
     let (Request req) = this
-    QueryString <| (req, req.GetQueryNameValuePairs())
-  /// validates request parameters
-  member this.Validate resultHandler =
-    let (Request req) = this
-    let result = 
-      Validation.getValidators req
-      |> List.rev
-      |> List.choose Validation.runValidator
-    resultHandler result
+    KeyValuePairSeq <| req.GetQueryNameValuePairs()
 
 type Response = Response of HttpRequestMessage with
   member this.ok value headers =

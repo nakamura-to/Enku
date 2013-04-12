@@ -70,7 +70,7 @@ route "path/04" <| fun req res ->
 route "path/05" <| fun req res -> 
   [ 
     post <| async {
-      let! content = req.AsyncReadAsString ()
+      let! content = req.AsyncReadAsString()
       return res.ok content [] }
   ]
 
@@ -78,11 +78,12 @@ route "path/06" <| fun req res ->
   let raiseFirst = function  [] -> () | h :: _ -> failwith h
   [ 
     post <| async {
-      let! form = req.AsyncReadAsForm ()
-      let aaa = form.Value "aaa" (Validator.head + Validator.required)
-      let bbb = form.Value "bbb" (Validator.head + Validator.required)
-      let ccc = form.Value "ccc" (Validator.head + Validator.required)
-      req.Validate raiseFirst
+      let! form = req.AsyncReadAsForm()
+      let vc = ValidationContext()
+      let aaa = vc.Add(form, "aaa", Validator.head + Validator.required)
+      let bbb = vc.Add(form, "bbb", Validator.head + Validator.required)
+      let ccc = vc.Add(form, "ccc", Validator.head + Validator.required)
+      vc.Eval() |> raiseFirst
       return res.ok (aaa.Value + bbb.Value + ccc.Value) [] }
   ]
 
