@@ -12,13 +12,13 @@
 
 namespace Enku
 
-open System.Net
 open System.Net.Http
 
 module Advice =
 
-  let around f operation = (fun req res -> f req res operation)
+  let around (f: Request -> Response -> ActionBody -> Async<HttpResponseMessage>) body = 
+    fun req res -> f req res body
 
-  let aroundAll f pairs = 
-    pairs|> List.map (fun (action, operation) -> action, around f operation)
+  let aroundAll f actions = 
+    actions |> List.map (fun (action, body) -> action, around f body)
 

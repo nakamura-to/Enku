@@ -13,17 +13,11 @@
 namespace Enku
 
 open System
-open System.Collections
 open System.Collections.Generic
 open System.Net
 open System.Net.Http
-open System.Net.Http.Formatting
 open System.Text.RegularExpressions
-open System.Threading.Tasks
 open System.Web.Http
-open System.Web.Http.Controllers
-open System.Web.Http.Dispatcher
-open Microsoft.FSharp.Reflection
 
 [<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -31,21 +25,22 @@ module Routing =
 
   let internal makeHandler controller = 
     { new HttpMessageHandler() with
-      override this.SendAsync(request, token) = 
-        let req = Request request
-        let res = Response request
-        let operation = async {
-          let! response = 
+      override this.SendAsync(requestMessage, token) = 
+        let req = Request requestMessage
+        let res = Response requestMessage
+        let tryPick (action, body) = 
+          match Action.run req res body action with
+          | Completion result -> Some result
+          | Skip -> None
+        let computation = async {
+          let! responseMessage = 
             controller ()
-            |> List.tryPick (fun (action, operation) ->
-              match Action.run req res operation action with
-              | Completion operation -> Some operation
-              | Skip -> None)
+            |> List.tryPick tryPick
             |> function 
-            | Some operation -> operation
-            | _ -> async {return new HttpResponseMessage(HttpStatusCode.NotFound)}
-          return response }
-        Async.StartAsTask(computation = operation, cancellationToken = token) }
+            | Some result -> result
+            | _ -> async { return new HttpResponseMessage(HttpStatusCode.NotFound) }
+          return responseMessage }
+        Async.StartAsTask(computation = computation, cancellationToken = token) }
   
   let regex = Regex(@"{\?(?<optional>[^}]*)}") 
 

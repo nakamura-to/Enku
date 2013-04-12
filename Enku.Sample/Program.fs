@@ -39,9 +39,10 @@ type Person = { name: string; age: int}
 
 let log req res operation = async {
   printfn "BEFORE"
-  let! result = operation req res
-  printfn "AFTER"
-  return result }
+  try
+    return! operation req res
+  finally
+    printfn "AFTER" }
 
 // normal
 route "path/01/{?id}" <| fun _ -> 
@@ -56,7 +57,7 @@ route "path/01/{?id}" <| fun _ ->
 // action alternatives
 route "path/02" <| fun _ -> 
   [ 
-    (get <|> post), fun req res -> async {
+    get <|> post, fun req res -> async {
       return res.ok {name = "foo"; age = 20} [] } 
   ]
 
@@ -81,9 +82,9 @@ route "path/06" <| fun _ ->
     post, fun req res ->  async {
       let! form = req.AsyncReadAsForm()
       let vc = ValidationContext()
-      let aaa = vc.Add(form, "aaa", Validator.head + Validator.required)
-      let bbb = vc.Add(form, "bbb", Validator.head + Validator.required)
-      let ccc = vc.Add(form, "ccc", Validator.head + Validator.required)
+      let aaa = vc.Add(form, "aaa", Validator.head >>= Validator.required)
+      let bbb = vc.Add(form, "bbb", Validator.head >>= Validator.required)
+      let ccc = vc.Add(form, "ccc", Validator.head >>= Validator.required)
       vc.Eval() |> raiseFirst
       return res.ok (aaa.Value + bbb.Value + ccc.Value) [] }
   ]

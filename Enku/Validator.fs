@@ -20,7 +20,7 @@ type ValidationResult<'R> =
   | Invalid of string
 
 type Validator<'V, 'R> = Validator of (string -> 'V option -> ValidationResult<'R>) with
-  static member (+) (Validator(x), Validator(y)) = Validator(fun name value ->
+  static member (>>=) (Validator(x), Validator(y)) = Validator(fun name value ->
     match x name value with
     | Valid ret -> y name ret
     | Invalid msg -> Invalid msg)
