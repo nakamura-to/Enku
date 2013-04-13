@@ -15,11 +15,11 @@ module RequestTest =
   [<Test>]
   let ``ValidationContext.Eval should eval querystring values``() =
     let req = Request <| new HttpRequestMessage(RequestUri = Uri("http://example/person?id=10&name=hoge"))
-    let qs = req.GetQueryString()
+    let qs = Request.queryString req
     let vc = ValidationContext()
-    let id = vc.Add(qs, "id", V.head >>= V.int >>= V.required)
-    let name = vc.Add(qs, "name", V.head >>= V.string >>= V.required)
-    match vc.Eval() with
+    let id = vc.Eval(qs, "id", V.head >>= V.int >>= V.required)
+    let name = vc.Eval(qs, "name", V.head >>= V.string >>= V.required)
+    match vc.Message with
     | [] ->
       id.Value |> isEqualTo 10
       name.Value |> isEqualTo "hoge"
@@ -30,12 +30,12 @@ module RequestTest =
   [<Test>]
   let ``ValidationContext.Eval should querystring values and produce validation error messages``() =
     let req = Request <| new HttpRequestMessage(RequestUri = Uri("http://example/person?id=foo&name=hoge&age=bar"))
-    let qs = req.GetQueryString()
+    let qs = Request.queryString req
     let vc = ValidationContext()
-    let id = vc.Add(qs, "id", V.head >>= V.int >>= V.required)
-    let name = vc.Add(qs, "name", V.head >>= V.string >>= V.required)
-    let age = vc.Add(qs, "age", V.head >>= V.int >>= V.required)
-    match vc.Eval() with
+    let id = vc.Eval(qs, "id", V.head >>= V.int >>= V.required)
+    let name = vc.Eval(qs, "name", V.head >>= V.string >>= V.required)
+    let age = vc.Eval(qs, "age", V.head >>= V.int >>= V.required)
+    match vc.Message with
     | [] -> failwith "validatioin should be fail"
     | messages -> printfn "%A" messages; List.length messages |> isEqualTo 2
     |> ignore
@@ -46,9 +46,9 @@ module RequestTest =
   let ``ValidationContext.Eval should eval record properties``() =
     let person = { Name = "hoge"; Age = 30 }
     let vc = ValidationContext()
-    vc.Add(<@ person.Name @>, V.length 10)
-    vc.Add(<@ person.Age @>, V.range 10 40)
-    match vc.Eval() with
+    vc.Eval(<@ person.Name @>, V.length 10) |> ignore
+    vc.Eval(<@ person.Age @>, V.range 10 40) |> ignore
+    match vc.Message with
     | [] ->
       ()
     | h :: _ -> 
@@ -59,9 +59,9 @@ module RequestTest =
   let ``ValidationContext.Eval should eval record properties and produce validation error messages``() =
     let person = { Name = "hoge"; Age = 50 }
     let vc = ValidationContext()
-    vc.Add(<@ person.Name @>, V.length 2)
-    vc.Add(<@ person.Age @>, V.range 10 40)
-    match vc.Eval() with
+    vc.Eval(<@ person.Name @>, V.length 2) |> ignore
+    vc.Eval(<@ person.Age @>, V.range 10 40) |> ignore
+    match vc.Message with
     | messages-> 
       List.length messages |> isEqualTo 2
       messages.[0] |> isEqualTo "Name is out of range (max=2)"

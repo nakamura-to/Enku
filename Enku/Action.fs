@@ -18,19 +18,18 @@ open System.Net.Http
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Action = 
 
-  let make predicate = Action(fun req res body ->
+  let make predicate = Action(fun req body ->
     if predicate req then
-      Right <| body req res
+      Right <| body req
     else 
       Left())
 
-  let run req res body (Action f) = f req res body
+  let run req body (Action f) = f req body
 
 [<AutoOpen>]
 module ActionDirectives =
 
-  let private isTargetRequest m (Request req) = 
-    req.Method = m
+  let private isTargetRequest m (Request req) = req.Method = m
 
   let get = Action.make (isTargetRequest HttpMethod.Get)
   let post = Action.make (isTargetRequest HttpMethod.Post)
@@ -42,7 +41,7 @@ module ActionDirectives =
   let patch = Action.make (isTargetRequest <| HttpMethod "PATCH")
   let any = Action.make (fun _ -> true)
 
-  let (<|>) (x: Action) (y: Action) = Action(fun req res body ->
-      match Action.run req res body x with
-      | Left _ -> Action.run req res body y
+  let (<|>) (x: Action) (y: Action) = Action(fun req body ->
+      match Action.run req body x with
+      | Left _ -> Action.run req body y
       | Right r -> Right r )

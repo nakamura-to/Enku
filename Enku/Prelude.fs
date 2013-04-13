@@ -39,78 +39,57 @@ module Prelude =
   type KeyValuePairSeq = KeyValuePairSeq of KeyValuePair<string, string> seq
 
   type ValidationContext() =
-    let validatorWrappers = ResizeArray<unit -> unit>()
-    let addLazyValue (lazyValue: Lazy<_>) =
-      validatorWrappers.Add((fun () -> lazyValue.Force() |> ignore))
+    let errorMessages = ResizeArray<string>()
+    member this.Message = Seq.toList errorMessages
     member private this.MakeLazyValue(validator, name, value) =
       lazy (
         match validator name value with
         | Right ret -> ret
         | Left message -> raise <| ValidationError message)
-    member this.Add((KeyValuePairSeq pairs), key, (Validator validator)) =
+    member private this.Force(lazyValue: Lazy<_>) =
+        try
+          lazyValue.Force () |> ignore
+        with
+        | ValidationError message -> 
+          errorMessages.Add(message)
+    member this.Eval((KeyValuePairSeq pairs), key, (Validator validator)) =
       let value =
         pairs
         |> Seq.filter (fun (KeyValue(k, value)) -> k = key)
         |> Seq.map (fun (KeyValue(_, value)) -> value)
         |> Seq.toList
       let lazyValue = this.MakeLazyValue(validator, key, Some value)
-      addLazyValue lazyValue
+      this.Force(lazyValue)
       lazyValue
-    member this.Add(expr: Expr<'T>, (Validator validator)) =
-      let addError message =
-        let lazyValue = lazy(raise <| ValidationError message)
-        addLazyValue lazyValue
-      match expr with
-      | PropertyGet(receiver, propInfo, _) ->
-        match receiver with
-        | Some receiver ->
+    member this.Eval(expr: Expr<'T>, (Validator validator)) =
+      let makeErrorValue message =
+        lazy(raise <| ValidationError message)
+      let lazyValue =
+        match expr with
+        | PropertyGet(receiver, propInfo, _) ->
           match receiver with
-          | Value(receiver, _) ->
-            let key = propInfo.Name
-            let value = propInfo.GetValue(receiver, null) :?> 'T
-            let lazyValue = this.MakeLazyValue(validator, key, Some value)
-            addLazyValue lazyValue
-          |_ -> addError (sprintf "%A is not a Value expression" receiver)
-        |_ -> addError (sprintf "%A is not an instance property" propInfo.Name)
-      | _ ->
-        addError (sprintf "%A is not an instance property" expr)
-    member this.Eval() =
-      let runValidator validator =
-        try
-          validator()
-          None
-        with
-        | ValidationError msg -> Some msg
-      validatorWrappers
-      |> Seq.choose runValidator
-      |> Seq.toList
+          | Some receiver ->
+            match receiver with
+            | Value(receiver, _) ->
+              let key = propInfo.Name
+              let value = propInfo.GetValue(receiver, null) :?> 'T
+              this.MakeLazyValue(validator, key, Some value)
+            |_ -> 
+              makeErrorValue (sprintf "%A is not a Value expression" receiver)
+          |_ -> 
+            makeErrorValue (sprintf "%A is not an instance property" propInfo.Name)
+        | _ -> 
+          makeErrorValue (sprintf "%A is not an instance property" expr)
+      this.Force(lazyValue)
+      lazyValue
 
-  type Request = Request of HttpRequestMessage with
-    member this.AsyncReadAsString() =
-      let (Request req) = this
-      Async.AwaitTask <| req.Content.ReadAsStringAsync()
-    member this.AsyncReadAsStream() =
-      let (Request req) = this
-      Async.AwaitTask <| req.Content.ReadAsStreamAsync()
-    member this.AsyncReadAsBytes() =
-      let (Request req) = this
-      Async.AwaitTask <| req.Content.ReadAsByteArrayAsync()
-    member this.AsyncReadAsForm() = async {
-      let (Request req) = this
-      let! form = Async.AwaitTask <| req.Content.ReadAsAsync<FormDataCollection>()
-      return KeyValuePairSeq(form) }
-    member this.GetQueryString() = 
-      let (Request req) = this
-      KeyValuePairSeq <| req.GetQueryNameValuePairs()
+  type Request = Request of HttpRequestMessage
 
-  type Response = Response of HttpRequestMessage with
-    member this.OK value headers =
-      let (Response req) = this
-      req.CreateResponse(HttpStatusCode.OK, value)
+  type ActionBody = (Request -> Async<HttpRequestMessage -> HttpResponseMessage>)
 
+  type Action = Action of (Request -> ActionBody -> Either<unit, Async<HttpRequestMessage -> HttpResponseMessage>>)
 
-  type ActionBody = (Request -> Response -> Async<HttpResponseMessage>)
+  type ErrorHandler = (Request -> exn -> Async<HttpRequestMessage -> HttpResponseMessage>)
 
-  type Action = Action of (Request -> Response -> ActionBody -> Either<unit, Async<HttpResponseMessage>>)
-
-  type ActionErrorHandler = (Request -> Response -> exn -> Async<HttpResponseMessage>)
+  type FormatError(message: string, innerException: exn) =
+    inherit Exception(message, innerException)

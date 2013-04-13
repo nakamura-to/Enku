@@ -29,93 +29,115 @@ open Newtonsoft.Json.Serialization
 open Newtonsoft.Json.Linq
 open Enku
 
+module V = Validator
+
 let baseAddress = new Uri("http://localhost:9090/")
 let config = new HttpSelfHostConfiguration(baseAddress)
 config.IncludeErrorDetailPolicy <- IncludeErrorDetailPolicy.Always
-config.Formatters.JsonFormatter.SerializerSettings.ContractResolver <- CamelCasePropertyNamesContractResolver()
+//config.Formatters.JsonFormatter.SerializerSettings.ContractResolver <- CamelCasePropertyNamesContractResolver()
+//config.Formatters.JsonFormatter.SerializerSettings.
 let route = Routing.route config
 
-type Person = { name: string; age: int}
+type Person = { Name: string; Age: int }
 
-let log req res operation = async {
+let log req body = async {
   printfn "BEFORE"
   try
-    return! operation req res
+    return! body req
   finally
     printfn "AFTER" }
 
-let error = fun req (res: Response) e -> async {
-  // TODO
-  return res.OK "error" [] }
+let handleError = fun req e -> async {
+  return Response.InternalServerError e }
 
 // normal
 route "path/01/{?id}" <| fun _ ->
   [ 
-    post, fun req res -> async {
-      return res.OK {name = "post"; age = 20} [] }
+    post, fun req -> async {
+      return Response.OK {Name = "post"; Age = 20} }
 
-    get, fun req res -> async {
-      return res.OK {name = "get"; age = 20} [] } 
+    get, fun req -> async {
+      return Response.OK {Name = "get"; Age = 20} } 
   ], 
-  error
+  handleError
 
 // action alternatives
 route "path/02" <| fun _ -> 
   [ 
-    get <|> post, fun req res -> async {
-      return res.OK {name = "foo"; age = 20} [] } 
+    get <|> post, fun req -> async {
+      return Response.OK {Name = "foo"; Age = 20} } 
   ],
-  error
+  handleError
 
 // do something around an operation
 route "path/04" <| fun _ -> 
   [ 
-    get, Advice.around log <| fun req res -> async {
+    get, Advice.around log <| fun req -> async {
       printfn "MAIN: GET path/04"
-      return res.OK {name = "foo"; age = 20} [] } 
+      return Response.OK {Name = "foo"; Age = 20} } 
   ],
-  error
+  handleError
 
 route "path/05" <| fun _ -> 
   [ 
-    post, fun req res -> async {
-      let! content = req.AsyncReadAsString()
-      return res.OK content [] }
+    post, fun req -> async {
+      let! content = Request.asyncReadAsString req
+      return Response.OK content }
   ],
-  error
+  handleError
 
 route "path/06" <| fun _ -> 
   let raiseFirst = function  [] -> () | h :: _ -> failwith h
   [ 
-    post, fun req res ->  async {
-      let! form = req.AsyncReadAsForm()
+    post, fun req ->  async {
+      let! form = Request.asyncReadAsForm req
       let vc = ValidationContext()
-      let aaa = vc.Add(form, "aaa", Validator.head >>= Validator.required)
-      let bbb = vc.Add(form, "bbb", Validator.head >>= Validator.required)
-      let ccc = vc.Add(form, "ccc", Validator.head >>= Validator.required)
-      vc.Eval() |> raiseFirst
-      return res.OK (aaa.Value + bbb.Value + ccc.Value) [] }
+      let aaa = vc.Eval(form, "aaa", V.head >>= V.required)
+      let bbb = vc.Eval(form, "bbb", V.head >>= V.required)
+      let ccc = vc.Eval(form, "ccc", V.head >>= V.required)
+      vc.Message |> raiseFirst
+      return Response.OK (aaa.Value + bbb.Value + ccc.Value) }
   ],
-  error
+  handleError
 
 route "path/07/{?id}" <| fun _ -> 
-    Advice.aroundAll log <|
-    [ 
-      post, fun req res -> async {
-        printfn "MAIN: POST path/07"
-        return res.OK {name = "post"; age = 20} [] }
+  Advice.aroundAll log <|
+  [ 
+    post, fun req -> async {
+      printfn "MAIN: POST path/07"
+      return Response.OK {Name = "post"; Age = 20} }
 
-      get, fun req res -> async {
-        printfn "MAIN: GET path/07"
-        return res.OK {name = "get"; age = 20} [] } 
-    ],
-    error
+    get, fun req -> async {
+      printfn "MAIN: GET path/07"
+      return Response.OK {Name = "get"; Age = 20} } 
+  ],
+  handleError
+
+route "path/08" <| fun _ -> 
+  Advice.aroundAll log <|
+  [ 
+    post, fun req -> 
+      let validate = function
+        | Right person ->
+          let vc = ValidationContext()
+          let name = vc.Eval(<@ person.Name @>, V.string >>= V.required)
+          let age = vc.Eval(<@ person.Age @>, V.int >>= V.range 15 20 >>= V.required)
+          match vc.Message with
+          | [] -> { Name = name.Value; Age = age.Value }
+          | h :: _ ->  Response.BadRequest(h) |> Response.exit
+        | Left (head, _) -> Response.BadRequest head |> Response.exit
+      async {
+        let! person = Request.asyncReadAs<Person> req
+        let person = validate person
+        return Response.OK person.Name }
+  ],
+  handleError
 
 async {
   use server = new HttpSelfHostServer(config)
   do! Async.AwaitTask <| server.OpenAsync().ContinueWith(fun _ -> ())
-  use client = new HttpClient(BaseAddress = baseAddress)
 
+  use client = new HttpClient(BaseAddress = baseAddress)
   use! response = Async.AwaitTask <| client.GetAsync("path/01/abc")
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
   printfn "sample01: %A" content 
@@ -152,7 +174,15 @@ async {
   use! response = Async.AwaitTask <| client.PostAsJsonAsync("path/07", @"{ ""test"": 10}")
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
   printfn "sample10: %A" content 
+
+  use! response = Async.AwaitTask <| client.PostAsJsonAsync("path/08", {Name = "hoge"; Age = 11})
+  let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
+  printfn "sample11: %A" content 
+
+  use! response = Async.AwaitTask <| client.PostAsJsonAsync("path/08", "test")
+  let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
+  printfn "sample12: %A" content
+
+  Console.ReadKey() |> ignore
 }
 |> Async.RunSynchronously
-
-Console.ReadKey() |> ignore
