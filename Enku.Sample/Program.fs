@@ -41,11 +41,18 @@ let route = Routing.route config
 type Person = { Name: string; Age: int }
 
 let log req body = async {
-  printfn "BEFORE"
+  printfn "BEFORE1"
   try
     return! body req
   finally
-    printfn "AFTER" }
+    printfn "AFTER1" }
+
+let log2 req body = async {
+  printfn "BEFORE2"
+  try
+    return! body req
+  finally
+    printfn "AFTER2" }
 
 let handleError = fun req e ->
   Response.InternalServerError e
@@ -72,7 +79,7 @@ route "path/02" <| fun _ ->
 // do something around an operation
 route "path/04" <| fun _ -> 
   [ 
-    get, Advice.around log <| fun req -> async {
+    get, fun req -> async {
       printfn "MAIN: GET path/04"
       return Response.OK {Name = "foo"; Age = 20} } 
   ],
@@ -88,8 +95,10 @@ route "path/05" <| fun _ ->
 
 route "path/06" <| fun _ -> 
   let raiseFirst = function  [] -> () | h :: _ -> failwith h
+  Advice.around [log] <|
   [ 
     post, fun req ->  async {
+      printfn "MAIN: POST path/06"
       let! form = Request.asyncReadAsForm req
       let vc = ValidationContext()
       let aaa = vc.Eval(form, "aaa", V.head >>= V.required)
@@ -101,7 +110,7 @@ route "path/06" <| fun _ ->
   handleError
 
 route "path/07/{?id}" <| fun _ -> 
-  Advice.aroundAll log <|
+  Advice.around [log ; log2] <|
   [ 
     post, fun req -> async {
       printfn "MAIN: POST path/07"
@@ -116,7 +125,6 @@ route "path/07/{?id}" <| fun _ ->
   handleError
 
 route "path/08" <| fun _ -> 
-  Advice.aroundAll log <|
   [ 
     post, fun req -> 
       let validate = function

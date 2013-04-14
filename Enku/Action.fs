@@ -41,6 +41,9 @@ module ActionDirectives =
   let patch = Action.make (isTargetRequest <| HttpMethod "PATCH")
   let any = Action.make (fun _ -> true)
 
+[<AutoOpen>]
+module ActionOperators =
+
   let (<|>) (x: Action) (y: Action) = Action(fun req body ->
       match Action.run req body x with
       | Left _ -> Action.run req body y

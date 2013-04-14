@@ -31,7 +31,7 @@ module Routing =
           match Action.run request body action with
           | Right r -> Some r
           | Left _ -> None
-        let actions, (errHandler: ErrorHandler) = controller ()
+        let actions, (errHandler: ErrorHandler) = controller request
         let computation = async {
           try
             let! (Response builder) =

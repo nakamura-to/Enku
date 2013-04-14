@@ -89,6 +89,8 @@ module Prelude =
 
   type ActionBody = (Request -> Async<Response>)
 
+  type Interceptor = Request -> (Request -> Async<Response>) -> Async<Response>
+
   type Action = Action of (Request -> ActionBody -> Either<unit, Async<Response>>)
 
   type ErrorHandler = (Request -> exn -> Response)
