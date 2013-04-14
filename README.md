@@ -73,6 +73,12 @@ async {
 |> Async.RunSynchronously
 ```
 
+Access
+
+```
+http://localhost:9090/example
+```
+
 ## License
 
 Apache License, Version 2.0
