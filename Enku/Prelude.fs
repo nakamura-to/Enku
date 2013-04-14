@@ -85,11 +85,13 @@ module Prelude =
 
   type Request = Request of HttpRequestMessage
 
-  type ActionBody = (Request -> Async<HttpRequestMessage -> HttpResponseMessage>)
+  type Response = Response of (HttpRequestMessage -> HttpResponseMessage)
 
-  type Action = Action of (Request -> ActionBody -> Either<unit, Async<HttpRequestMessage -> HttpResponseMessage>>)
+  type ActionBody = (Request -> Async<Response>)
 
-  type ErrorHandler = (Request -> exn -> Async<HttpRequestMessage -> HttpResponseMessage>)
+  type Action = Action of (Request -> ActionBody -> Either<unit, Async<Response>>)
+
+  type ErrorHandler = (Request -> exn -> Response)
 
   type FormatError(message: string, innerException: exn) =
     inherit Exception(message, innerException)

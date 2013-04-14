@@ -17,7 +17,7 @@ open System.Net.Http
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Advice =
 
-  let around (f: Request -> ActionBody -> Async<HttpRequestMessage -> HttpResponseMessage>) body = 
+  let around (f: Request -> ActionBody -> Async<Response>) body = 
     fun req -> f req body
 
   let aroundAll f actions = 

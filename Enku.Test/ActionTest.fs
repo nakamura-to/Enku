@@ -24,27 +24,29 @@ module ActionTest =
     let reqMessage = new HttpRequestMessage(HttpMethod.Get, "person/1")
     let resMessage = new HttpResponseMessage()
     let req = Request <| reqMessage
-    let body = fun req -> async { return fun _ -> resMessage }
+    let body = fun req -> async { return Response(fun _ -> resMessage) }
     match Action.run req body get with
     | Right r ->
-      reqMessage |> Async.RunSynchronously r |> isEqualTo resMessage
+      Async.RunSynchronously r |> fun (Response builder) -> 
+        builder reqMessage |> isEqualTo resMessage
     | Left _ -> failwith "fail"
 
     let reqMessage = new HttpRequestMessage(HttpMethod.Post, "person")
     let resMessage = new HttpResponseMessage()
     let req = Request reqMessage
-    let body = fun req -> async { return fun _ -> resMessage }
+    let body = fun req -> async { return Response(fun _ -> resMessage) }
     match Action.run req body post with
     | Right r ->
-      reqMessage |> Async.RunSynchronously r |> isEqualTo resMessage
+      Async.RunSynchronously r |> fun (Response builder) -> 
+        builder reqMessage |> isEqualTo resMessage
     | Left _ -> failwith "fail"
 
   [<Test>]
   let ``the action should be skipped``() =
     let reqMessage =  new HttpRequestMessage(HttpMethod.Get, "person/1")
     let resMessage = new HttpResponseMessage()
-    let req = Request <| reqMessage
-    let body = fun req -> async { return fun _ -> resMessage }
+    let req = Request reqMessage
+    let body = fun req -> async { return Response(fun _ -> resMessage) }
     match Action.run req body post with
     | Right _ -> failwith "fail"
     | Left _ -> ()
@@ -52,7 +54,7 @@ module ActionTest =
     let reqMessage = new HttpRequestMessage(HttpMethod.Post, "person")
     let resMessage = new HttpResponseMessage()
     let req = Request reqMessage
-    let body = fun req -> async { return fun _ -> resMessage }
+    let body = fun req -> async { return Response(fun _ -> resMessage) }
     match Action.run req body get with
     | Right _ -> failwith "fail"
     | Left _ -> ()

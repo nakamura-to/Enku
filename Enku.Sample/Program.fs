@@ -47,8 +47,8 @@ let log req body = async {
   finally
     printfn "AFTER" }
 
-let handleError = fun req e -> async {
-  return Response.InternalServerError e }
+let handleError = fun req e ->
+  Response.InternalServerError e
 
 // normal
 route "path/01/{?id}" <| fun _ ->
@@ -59,7 +59,7 @@ route "path/01/{?id}" <| fun _ ->
     get, fun req -> async {
       return Response.OK {Name = "get"; Age = 20} } 
   ], 
-  handleError
+  fun req e -> Response.InternalServerError e
 
 // action alternatives
 route "path/02" <| fun _ -> 
@@ -109,7 +109,9 @@ route "path/07/{?id}" <| fun _ ->
 
     get, fun req -> async {
       printfn "MAIN: GET path/07"
-      return Response.OK {Name = "get"; Age = 20} } 
+      return Response.OK {Name = "get"; Age = 20}
+        |> Response.appendHeaders 
+           [ ResponseHeader.Age <| TimeSpan(12, 13, 14) ] }
   ],
   handleError
 
@@ -120,8 +122,8 @@ route "path/08" <| fun _ ->
       let validate = function
         | Right person ->
           let vc = ValidationContext()
-          let name = vc.Eval(<@ person.Name @>, V.string >>= V.required)
-          let age = vc.Eval(<@ person.Age @>, V.int >>= V.range 15 20 >>= V.required)
+          let name = vc.Eval(<@ person.Name @>, V.required)
+          let age = vc.Eval(<@ person.Age @>, V.range 15 20 >>= V.required)
           match vc.Message with
           | [] -> { Name = name.Value; Age = age.Value }
           | h :: _ ->  Response.BadRequest(h) |> Response.exit

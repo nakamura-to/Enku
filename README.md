@@ -20,7 +20,9 @@ route "example/{?id}" <| fun _ ->
 
     any, fun req -> async {
       return Response.OK "Accept any HTTP methods" }
-  ]
+  ], 
+  fun req e ->
+    Response.InternalServerError e
 ```
 
 ## Install
