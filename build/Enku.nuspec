@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>Enku</id>
+    <version>0.0.0.0</version>
+    <authors>Toshihiro Nakamura</authors>
+    <owners>Toshihiro Nakamura</owners>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0.html</licenseUrl>
+    <projectUrl>https://github.com/nakamura-to/Enku</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>F# Lightweight Web API Framework</description>
+    <tags>F# fsharp AspNet WebApi AspNetWebApi</tags>
+    <dependencies>
+      <dependency id="Microsoft.AspNet.WebApi.Core" version="4.0.20710.0" />
+    </dependencies>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="System" targetFramework="net40" />
+      <frameworkAssembly assemblyName="System.Numerics" targetFramework="net40" />
+    </frameworkAssemblies>
+  </metadata>
+</package>
