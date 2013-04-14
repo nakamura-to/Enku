@@ -25,7 +25,7 @@ module Routing =
 
   let internal makeHandler controller = 
     { new HttpMessageHandler() with
-      override this.SendAsync(requestMessage, token) = 
+      override this.SendAsync(requestMessage, cancellationToken) = 
         let request = Request requestMessage
         let runAction (action, body) = 
           match Action.run request body action with
@@ -39,7 +39,7 @@ module Routing =
               |> List.tryPick runAction
               |> function 
               | Some result -> result
-              | _ -> async { return Response(fun _ -> new HttpResponseMessage(HttpStatusCode.NotFound)) }
+              | _ -> async { return Response.NotFound "" }
             return builder requestMessage
           with e ->
             let (Response builder) = 
@@ -49,7 +49,7 @@ module Routing =
               | _ ->
                 errHandler request e
             return builder requestMessage }
-        Async.StartAsTask(computation = computation, cancellationToken = token) }
+        Async.StartAsTask(computation, cancellationToken = cancellationToken) }
   
   let internal regex = Regex(@"{\?(?<optional>[^}]*)}") 
 
