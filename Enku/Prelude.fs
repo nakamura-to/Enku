@@ -29,7 +29,7 @@ module Prelude =
     | Right of 'R
 
   type Validator<'V, 'R> = Validator of (string -> 'V option -> Either<string, 'R>) with
-    static member (>>=) (Validator(x), Validator(y)) = Validator(fun name value ->
+    static member (<&>) (Validator(x), Validator(y)) = Validator(fun name value ->
       match x name value with
       | Right ret -> y name ret
       | Left msg -> Left msg)
