@@ -25,21 +25,31 @@ module Response =
   let exit response =
     raise <| Exit response
 
-  let appendHeaders headerBuilders (Response resposeBuilder) = Response(fun (requestMessage) ->
+  let appendHeaders headerSetters (Response resposeBuilder) = Response(fun (requestMessage) ->
     let responseMessage = resposeBuilder requestMessage
     let responseHeaders = responseMessage.Headers
-    headerBuilders |> List.iter (fun builder -> builder responseHeaders)
+    headerSetters |> List.iter (fun setter -> setter responseHeaders)
     responseMessage)
 
-  let appendContentHeaders headerBuilders (Response responseBuilder) = Response(fun (requestMessage) ->
+  let appendContentHeaders headerSetters (Response responseBuilder) = Response(fun (requestMessage) ->
     let responseMessage = responseBuilder requestMessage
     let content = responseMessage.Content
     if content = null then
       responseMessage
     else
       let contentHeaders = content.Headers
-      headerBuilders |> List.iter (fun builder -> builder contentHeaders)
+      headerSetters |> List.iter (fun setter -> setter contentHeaders)
       responseMessage)
+
+  let setReasonPhrase reasonPhrase (Response responseBuilder) = Response(fun (requestMessage) ->
+    let responseMessage = responseBuilder requestMessage
+    responseMessage.ReasonPhrase <- reasonPhrase
+    responseMessage)
+
+  let setVersion version (Response responseBuilder) = Response(fun (requestMessage) ->
+    let responseMessage = responseBuilder requestMessage
+    responseMessage.Version <- version
+    responseMessage)
 
   let make statusCode value = Response(fun (requestMessage) ->
     match box value with

@@ -15,7 +15,7 @@ module RequestTest =
   [<Test>]
   let ``ValidationContext.Eval should eval querystring values``() =
     let req = Request <| new HttpRequestMessage(RequestUri = Uri("http://example/person?id=10&name=hoge"))
-    let qs = Request.queryString req
+    let qs = Request.getQueryString req
     let vc = ValidationContext()
     let id = vc.Eval(qs, "id", V.head <&> V.int <&> V.required)
     let name = vc.Eval(qs, "name", V.head <&> V.string <&> V.required)
@@ -30,7 +30,7 @@ module RequestTest =
   [<Test>]
   let ``ValidationContext.Eval should querystring values and produce validation error messages``() =
     let req = Request <| new HttpRequestMessage(RequestUri = Uri("http://example/person?id=foo&name=hoge&age=bar"))
-    let qs = Request.queryString req
+    let qs = Request.getQueryString req
     let vc = ValidationContext()
     let id = vc.Eval(qs, "id", V.head <&> V.int <&> V.required)
     let name = vc.Eval(qs, "name", V.head <&> V.string <&> V.required)
