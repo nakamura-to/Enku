@@ -40,19 +40,19 @@ let route = Routing.route config
 
 type Person = { Name: string; Age: int }
 
-let log req body = async {
+let log = Around(fun req body -> async {
   printfn "BEFORE1"
   try
     return! body req
   finally
-    printfn "AFTER1" }
+    printfn "AFTER1" })
 
-let log2 req body = async {
+let log2 = Around(fun req body -> async {
   printfn "BEFORE2"
   try
     return! body req
   finally
-    printfn "AFTER2" }
+    printfn "AFTER2" })
 
 let handleError = fun req e ->
   Response.InternalServerError e

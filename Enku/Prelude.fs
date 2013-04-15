@@ -101,7 +101,7 @@ module Prelude =
 
   type ActionBody = (Request -> Async<Response>)
 
-  type Interceptor = Request -> (Request -> Async<Response>) -> Async<Response>
+  type Around = Around of (Request -> ActionBody -> Async<Response>)
 
   type Action = Action of (Request -> ActionBody -> Async<Response> option)
 
