@@ -26,20 +26,20 @@ module ActionTest =
     let req = Request <| reqMessage
     let body = fun req -> async { return Response(fun _ -> resMessage) }
     match Action.run req body get with
-    | Right r ->
+    | Some r ->
       Async.RunSynchronously r |> fun (Response builder) -> 
         builder reqMessage |> isEqualTo resMessage
-    | Left _ -> failwith "fail"
+    | _ -> failwith "fail"
 
     let reqMessage = new HttpRequestMessage(HttpMethod.Post, "person")
     let resMessage = new HttpResponseMessage()
     let req = Request reqMessage
     let body = fun req -> async { return Response(fun _ -> resMessage) }
     match Action.run req body post with
-    | Right r ->
+    | Some r ->
       Async.RunSynchronously r |> fun (Response builder) -> 
         builder reqMessage |> isEqualTo resMessage
-    | Left _ -> failwith "fail"
+    | _ -> failwith "fail"
 
   [<Test>]
   let ``the action should be skipped``() =
@@ -48,14 +48,14 @@ module ActionTest =
     let req = Request reqMessage
     let body = fun req -> async { return Response(fun _ -> resMessage) }
     match Action.run req body post with
-    | Right _ -> failwith "fail"
-    | Left _ -> ()
+    | Some _ -> failwith "fail"
+    | _ -> ()
 
     let reqMessage = new HttpRequestMessage(HttpMethod.Post, "person")
     let resMessage = new HttpResponseMessage()
     let req = Request reqMessage
     let body = fun req -> async { return Response(fun _ -> resMessage) }
     match Action.run req body get with
-    | Right _ -> failwith "fail"
-    | Left _ -> ()
+    | Some _ -> failwith "fail"
+    | _ -> ()
 

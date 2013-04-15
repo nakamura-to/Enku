@@ -103,7 +103,7 @@ module Prelude =
 
   type Interceptor = Request -> (Request -> Async<Response>) -> Async<Response>
 
-  type Action = Action of (Request -> ActionBody -> Either<unit, Async<Response>>)
+  type Action = Action of (Request -> ActionBody -> Async<Response> option)
 
   type ErrorHandler = (Request -> exn -> Response)
 

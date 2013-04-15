@@ -20,9 +20,9 @@ module Action =
 
   let make predicate = Action(fun req body ->
     if predicate req then
-      Right <| body req
+      Some <| body req
     else 
-      Left())
+      None)
 
   let run req body (Action f) = f req body
 
@@ -46,5 +46,5 @@ module ActionOperators =
 
   let (<|>) (x: Action) (y: Action) = Action(fun req body ->
       match Action.run req body x with
-      | Left _ -> Action.run req body y
-      | Right r -> Right r )
+      | Some result -> Some result
+      | _ -> Action.run req body y)

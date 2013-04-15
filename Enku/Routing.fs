@@ -25,30 +25,27 @@ module Routing =
 
   let internal makeHandler controller = 
     { new HttpMessageHandler() with
-      override this.SendAsync(requestMessage, cancellationToken) = 
-        let request = Request requestMessage
-        let runAction (action, body) = 
-          match Action.run request body action with
-          | Right r -> Some r
-          | Left _ -> None
-        let actions, (errHandler: ErrorHandler) = controller request
+      override this.SendAsync(reqMessage, cancellationToken) = 
+        let req = Request reqMessage
+        let actions, (errHandler: ErrorHandler) = controller req
         let computation = async {
           try
             let! (Response builder) =
               actions
-              |> List.tryPick runAction
+              |> List.tryPick (fun (action, body) -> 
+                Action.run req body action)
               |> function 
               | Some result -> result
               | _ -> async { return Response.NotFound "" }
-            return builder requestMessage
+            return builder reqMessage
           with e ->
             let (Response builder) = 
               match e with 
               | Response.Exit builder ->
                 builder
               | _ ->
-                errHandler request e
-            return builder requestMessage }
+                errHandler req e
+            return builder reqMessage }
         Async.StartAsTask(computation, cancellationToken = cancellationToken) }
   
   let internal regex = Regex(@"{\?(?<optional>[^}]*)}") 
