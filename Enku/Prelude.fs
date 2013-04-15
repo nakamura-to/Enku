@@ -31,10 +31,10 @@ module Prelude =
 
   module Map =
 
-    let findHead key (map: Map<string, string list>) =
+    let findHead key (map: Map<_, _ list>) =
       Map.find key map |> List.head
 
-    let tryFindHead key (map: Map<string, string list>) =
+    let tryFindHead key (map: Map<_, _ list>) =
       match Map.tryFind key map with
       | None -> None
       | Some values ->
