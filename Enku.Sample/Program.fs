@@ -126,7 +126,9 @@ route "path/07/{?id}" <| fun _ ->
       printfn "MAIN: GET path/07, id=%s" id
       return Response.OK {Name = "get"; Age = 20}
         |> Response.appendHeaders 
-           [ ResponseHeader.Age <| TimeSpan(12, 13, 14) ] }
+           [ ResponseHeader.Age <| TimeSpan(12, 13, 14) ] 
+        |> Response.appendContentHeaders
+           [ ContentHeader.ContentType <| Headers.MediaTypeHeaderValue("text/plain")] }
   ],
   handleError
 

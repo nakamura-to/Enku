@@ -49,6 +49,7 @@
     <Compile Include="RequestHeader.fs" />
     <Compile Include="Request.fs" />
     <Compile Include="ResponseHeader.fs" />
+    <Compile Include="ContentHeader.fs" />
     <Compile Include="Response.fs" />
     <Compile Include="Action.fs" />
     <Compile Include="Advice.fs" />
