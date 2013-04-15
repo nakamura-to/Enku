@@ -18,11 +18,10 @@ open System.Net.Http
 module Advice =
 
   let around (interceptors: Interceptor list) actions =
-    let chain x y =
-      fun req body ->
-        x req (fun req -> 
-          y req body)
-    let f = interceptors |> List.reduce chain
-    actions 
-    |> List.map (fun (action: Action, body: ActionBody) -> 
-      action, fun req -> f req body)
+    let chain x y = fun req body ->
+      x req (fun req ->
+        y req body)
+    let interceptorChain = interceptors |> List.reduce chain
+    actions |> List.map (fun (action: Action, body: ActionBody) ->
+      let newBody : ActionBody = fun req -> interceptorChain req body
+      action, newBody)
