@@ -28,6 +28,19 @@ module Prelude =
     | Left of 'L
     | Right of 'R
 
+  module Map =
+
+    let findHead key (map: Map<string, string list>) =
+      Map.find key map |> List.head
+
+    let tryFindHead key (map: Map<string, string list>) =
+      match Map.tryFind key map with
+      | None -> None
+      | Some values ->
+        match values with
+        | [] -> None
+        | h :: _ -> Some h
+
   type Validator<'V, 'R> = Validator of (string -> 'V option -> Either<string, 'R>) with
     static member (<&>) (Validator(x), Validator(y)) = Validator(fun name value ->
       match x name value with
@@ -35,8 +48,6 @@ module Prelude =
       | Left msg -> Left msg)
 
   exception internal ValidationError of string
-
-  type KeyValuePairSeq = KeyValuePairSeq of KeyValuePair<string, string> seq
 
   type ValidationContext() =
     let errorMessages = ResizeArray<string>()
@@ -52,13 +63,9 @@ module Prelude =
         with
         | ValidationError message -> 
           errorMessages.Add(message)
-    member this.Eval((KeyValuePairSeq pairs), key, (Validator validator)) =
-      let value =
-        pairs
-        |> Seq.filter (fun (KeyValue(k, value)) -> k = key)
-        |> Seq.map (fun (KeyValue(_, value)) -> value)
-        |> Seq.toList
-      let lazyValue = this.MakeLazyValue(validator, key, Some value)
+    member this.Eval(map: Map<string, string list>, key, (Validator validator)) =
+      let value = Map.tryFind key map
+      let lazyValue = this.MakeLazyValue(validator, key, value)
       this.Force(lazyValue)
       lazyValue
     member this.Eval(expr: Expr<'T>, (Validator validator)) =
@@ -97,3 +104,5 @@ module Prelude =
 
   type FormatError(message: string, innerException: exn) =
     inherit Exception(message, innerException)
+
+

@@ -30,6 +30,12 @@ module Request =
         if exn = null then invalidArg "exn" "The arg must not be null"
         errors.Add(FormatError(errorPath, exn))
 
+  let private toMap keyValuePairs =
+    keyValuePairs
+    |> Seq.groupBy (fun (KeyValue(key, _)) -> key)
+    |> Seq.map (fun (key, values) -> key, values |> Seq.map (fun (KeyValue(_, value)) -> value) |> Seq.toList)
+    |> Map.ofSeq
+
   let asyncReadAsString (Request reqMessage) =
     Async.AwaitTask <| reqMessage.Content.ReadAsStringAsync()
 
@@ -40,20 +46,29 @@ module Request =
     Async.AwaitTask <| reqMessage.Content.ReadAsByteArrayAsync()
 
   let asyncReadAsForm (Request reqMessage) = async {
-      let! form = Async.AwaitTask <| reqMessage.Content.ReadAsAsync<FormDataCollection>()
-      return KeyValuePairSeq(form) }
+    let! form = Async.AwaitTask <| reqMessage.Content.ReadAsAsync<FormDataCollection>()
+    return toMap form }
 
-  let asyncReadAs<'T> (Request reqMessage) =
-    async {
-      let formatters = reqMessage.GetConfiguration().Formatters
-      let errors = ResizeArray()
-      let logger = FormatterLogger(errors)
-      let! result = Async.AwaitTask <| reqMessage.Content.ReadAsAsync<'T>(formatters, logger)
-      let errors = Seq.toList errors
-      return
-        match errors with
-        | [] -> Right result
-        | head :: tail -> Left (head, tail) }
+  let asyncReadAs<'T> (Request reqMessage) = async {
+    let formatters = reqMessage.GetConfiguration().Formatters
+    let errors = ResizeArray()
+    let logger = FormatterLogger(errors)
+    let! result = Async.AwaitTask <| reqMessage.Content.ReadAsAsync<'T>(formatters, logger)
+    let errors = Seq.toList errors
+    return
+      match errors with
+      | [] -> Right result
+      | head :: tail -> Left (head, tail) }
 
   let queryString (Request reqMessage) = 
-      KeyValuePairSeq <| reqMessage.GetQueryNameValuePairs()
+    reqMessage.GetQueryNameValuePairs() |> toMap
+
+  let routeValues (Request reqMessage) =
+    let routeData = reqMessage.GetRouteData()
+    routeData.Values
+    |> Seq.choose (fun (KeyValue(key, value)) -> 
+      if value = null then 
+        None 
+      else 
+        Some (key, string value))
+    |> Map.ofSeq
