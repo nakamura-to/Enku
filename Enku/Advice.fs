@@ -17,9 +17,6 @@ open System.Net.Http
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Advice =
 
-  let private aroundBody (f: Request -> ActionBody -> Async<Response>) body = 
-    fun req -> f req body
-
   let around (interceptors: Interceptor list) actions =
     let chain x y =
       fun req body ->
@@ -28,4 +25,4 @@ module Advice =
     let f = interceptors |> List.reduce chain
     actions 
     |> List.map (fun (action: Action, body: ActionBody) -> 
-      action, aroundBody f body)
+      action, fun req -> f req body)
