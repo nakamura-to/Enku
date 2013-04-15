@@ -18,6 +18,7 @@ open System.Collections.Generic
 open System.Net
 open System.Net.Http
 open System.Net.Http.Formatting
+open System.Net.Http.Headers
 open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Quotations.Patterns
 
@@ -63,6 +64,10 @@ module Prelude =
         with
         | ValidationError message -> 
           errorMessages.Add(message)
+    member this.Eval((name, value), (Validator validator)) =
+      let lazyValue = this.MakeLazyValue(validator, name, value)
+      this.Force(lazyValue)
+      lazyValue
     member this.Eval(map: Map<string, string list>, key, (Validator validator)) =
       let value = Map.tryFind key map
       let lazyValue = this.MakeLazyValue(validator, key, value)
