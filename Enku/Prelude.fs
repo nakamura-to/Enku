@@ -68,7 +68,7 @@ module Prelude =
       let lazyValue = this.MakeLazyValue(validator, name, value)
       this.Force(lazyValue)
       lazyValue
-    member this.Eval(map: Map<string, string list>, key, (Validator validator)) =
+    member this.Eval(map: Map<_, _>, key, (Validator validator)) =
       let value = Map.tryFind key map
       let lazyValue = this.MakeLazyValue(validator, key, value)
       this.Force(lazyValue)

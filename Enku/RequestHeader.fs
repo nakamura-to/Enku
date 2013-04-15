@@ -126,8 +126,11 @@ module RequestHeader =
     "Warning", Seq.toList req.Headers.Warning
 
   let Cookie name (Request req) =
-    "Cookie(name=" + name + ")", Seq.toList <| req.Headers.GetCookies(name)
+    let value =
+      req.Headers.GetCookies(name)
+      |> Seq.tryPick (fun cookie -> Some cookie)
+    "Cookie " + name, value
 
-  let CookieAll (Request req) =
+  let CookiesAll (Request req) =
     "Cookie", Seq.toList <| req.Headers.GetCookies()
 

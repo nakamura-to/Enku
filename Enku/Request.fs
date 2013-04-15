@@ -30,11 +30,11 @@ module Request =
         if exn = null then invalidArg "exn" "The arg must not be null"
         errors.Add(FormatError(errorPath, exn))
 
-  let private toMap keyValuePairs =
+  let private toKeyValuesMap keyValuePairs =
     keyValuePairs
     |> Seq.groupBy (fun (KeyValue(key, _)) -> key)
-    |> Seq.map (fun (key, values) -> 
-      let values = 
+    |> Seq.map (fun (key, values) ->
+      let values =
         values 
         |> Seq.map (fun (KeyValue(_, value)) -> value) 
         |> Seq.toList
@@ -52,7 +52,7 @@ module Request =
 
   let asyncReadAsForm (Request reqMessage) = async {
     let! form = Async.AwaitTask <| reqMessage.Content.ReadAsAsync<FormDataCollection>()
-    return toMap form }
+    return toKeyValuesMap form }
 
   let asyncReadAs<'T> (Request reqMessage) = async {
     let formatters = reqMessage.GetConfiguration().Formatters
@@ -65,8 +65,15 @@ module Request =
       | [] -> Right result
       | head :: tail -> Left (head, tail) }
 
-  let getQueryString (Request reqMessage) = 
-    reqMessage.GetQueryNameValuePairs() |> toMap
+  let getQueryStrings (Request reqMessage) = 
+    reqMessage.GetQueryNameValuePairs()
+    |> Seq.distinctBy (fun (KeyValue(key, _)) -> key)
+    |> Seq.map (fun (KeyValue(key, value)) -> key, value)
+    |> Map.ofSeq
+
+  let getQueryStringsAll (Request reqMessage) = 
+    reqMessage.GetQueryNameValuePairs()
+    |> toKeyValuesMap
 
   let getRouteValues (Request reqMessage) =
     let routeData = reqMessage.GetRouteData()

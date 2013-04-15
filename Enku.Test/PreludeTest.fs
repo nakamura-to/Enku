@@ -13,12 +13,12 @@ module RequestTest =
   module V = Validator
 
   [<Test>]
-  let ``ValidationContext.Eval should eval querystring values``() =
+  let ``ValidationContext.Eval should eval querystring value``() =
     let req = Request <| new HttpRequestMessage(RequestUri = Uri("http://example/person?id=10&name=hoge"))
-    let qs = Request.getQueryString req
+    let qs = Request.getQueryStrings req
     let vc = ValidationContext()
-    let id = vc.Eval(qs, "id", V.head <&> V.int <&> V.required)
-    let name = vc.Eval(qs, "name", V.head <&> V.string <&> V.required)
+    let id = vc.Eval(qs, "id", V.int <&> V.required)
+    let name = vc.Eval(qs, "name", V.string <&> V.required)
     match vc.Message with
     | [] ->
       id.Value |> isEqualTo 10
@@ -28,13 +28,13 @@ module RequestTest =
     |> ignore
 
   [<Test>]
-  let ``ValidationContext.Eval should querystring values and produce validation error messages``() =
+  let ``ValidationContext.Eval should eval querystring value and produce validation error messages``() =
     let req = Request <| new HttpRequestMessage(RequestUri = Uri("http://example/person?id=foo&name=hoge&age=bar"))
-    let qs = Request.getQueryString req
+    let qs = Request.getQueryStrings req
     let vc = ValidationContext()
-    let id = vc.Eval(qs, "id", V.head <&> V.int <&> V.required)
-    let name = vc.Eval(qs, "name", V.head <&> V.string <&> V.required)
-    let age = vc.Eval(qs, "age", V.head <&> V.int <&> V.required)
+    let id = vc.Eval(qs, "id",V.int <&> V.required)
+    let name = vc.Eval(qs, "name", V.string <&> V.required)
+    let age = vc.Eval(qs, "age", V.int <&> V.required)
     match vc.Message with
     | [] -> failwith "validatioin should be fail"
     | messages -> printfn "%A" messages; List.length messages |> isEqualTo 2
