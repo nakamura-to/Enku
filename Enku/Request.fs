@@ -33,7 +33,12 @@ module Request =
   let private toMap keyValuePairs =
     keyValuePairs
     |> Seq.groupBy (fun (KeyValue(key, _)) -> key)
-    |> Seq.map (fun (key, values) -> key, values |> Seq.map (fun (KeyValue(_, value)) -> value) |> Seq.toList)
+    |> Seq.map (fun (key, values) -> 
+      let values = 
+        values 
+        |> Seq.map (fun (KeyValue(_, value)) -> value) 
+        |> Seq.toList
+      key, values)
     |> Map.ofSeq
 
   let asyncReadAsString (Request reqMessage) =
@@ -60,10 +65,10 @@ module Request =
       | [] -> Right result
       | head :: tail -> Left (head, tail) }
 
-  let queryString (Request reqMessage) = 
+  let getQueryString (Request reqMessage) = 
     reqMessage.GetQueryNameValuePairs() |> toMap
 
-  let routeValues (Request reqMessage) =
+  let getRouteValues (Request reqMessage) =
     let routeData = reqMessage.GetRouteData()
     routeData.Values
     |> Seq.choose (fun (KeyValue(key, value)) -> 
@@ -72,3 +77,12 @@ module Request =
       else 
         Some (key, string value))
     |> Map.ofSeq
+
+  let getMethod (Request reqMessage) =
+    reqMessage.Method
+
+  let getRequestUri (Request reqMessage) =
+    reqMessage.RequestUri
+
+  let getVersion (Request reqMessage) =
+    reqMessage.Version
