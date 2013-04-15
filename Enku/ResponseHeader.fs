@@ -76,3 +76,6 @@ module ResponseHeader =
 
   let WwwAuthenticate value = fun (header: HttpResponseHeaders) ->
     header.WwwAuthenticate.Add(value)
+
+  let SetCookie value = fun (header: HttpResponseHeaders) ->
+    header.AddCookies(seq { yield value })

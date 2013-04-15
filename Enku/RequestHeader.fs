@@ -124,3 +124,10 @@ module RequestHeader =
 
   let Warning (Request req) = 
     "Warning", Seq.toList req.Headers.Warning
+
+  let Cookie name (Request req) =
+    "Cookie(name=" + name + ")", Seq.toList <| req.Headers.GetCookies(name)
+
+  let CookieAll (Request req) =
+    "Cookie", Seq.toList <| req.Headers.GetCookies()
+
