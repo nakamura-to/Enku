@@ -91,7 +91,7 @@ module Prelude =
           |_ -> 
             makeErrorValue (sprintf "%A is not an instance property" propInfo.Name)
         | _ -> 
-          makeErrorValue (sprintf "%A is not an instance property" expr)
+          makeErrorValue (sprintf "%A is not a property" expr)
       this.Force(lazyValue)
       lazyValue
 
