@@ -57,7 +57,7 @@ module Prelude =
       | Left message ->
         errorMessages.Add(message)
         None
-    member this.Eval((name, value), (Validator validator)) =
+    member this.Eval(value, name, (Validator validator)) =
       this.Run(validator, name, value)
     member this.Eval(map: Map<_, _>, key, (Validator validator)) =
       let value = Map.tryFind key map
@@ -69,9 +69,9 @@ module Prelude =
         | Some receiver ->
           match receiver with
           | Value(receiver, _) ->
-            let key = propInfo.Name
+            let name = propInfo.Name
             let value = propInfo.GetValue(receiver, null) :?> 'T
-            this.Run(validator, key, Some value)
+            this.Run(validator, name, Some value)
           |_ -> 
             errorMessages.Add(sprintf "%A is not a Value expression" receiver)
             None
