@@ -65,24 +65,43 @@ module Request =
       | [] -> Right result
       | head :: tail -> Left (head, tail) }
 
-  let getQueryStrings (Request reqMessage) = 
+  let getQueryString key (Request reqMessage) = 
     reqMessage.GetQueryNameValuePairs()
-    |> Seq.distinctBy (fun (KeyValue(key, _)) -> key)
-    |> Seq.map (fun (KeyValue(key, value)) -> key, value)
+    |> Seq.tryPick (fun (KeyValue(k, v)) -> 
+      if k = key then 
+        Some v 
+      else 
+        None)
+
+  let getQueryStringMap (Request reqMessage) = 
+    reqMessage.GetQueryNameValuePairs()
+    |> Seq.distinctBy (fun (KeyValue(k, _)) -> k)
+    |> Seq.map (fun (KeyValue(k, v)) -> k, v)
     |> Map.ofSeq
 
   let getQueryStringsAll (Request reqMessage) = 
     reqMessage.GetQueryNameValuePairs()
     |> toKeyValuesMap
 
-  let getRouteValues (Request reqMessage) =
+  let getRouteValue key (Request reqMessage) =
     let routeData = reqMessage.GetRouteData()
-    routeData.Values
-    |> Seq.choose (fun (KeyValue(key, value)) -> 
-      if value = null then 
+    match routeData.Values.TryGetValue(key) with
+    | true, v ->
+      if v = null then 
         None 
       else 
-        Some (key, string value))
+        Some <| string v
+    | _ -> 
+      None
+
+  let getRouteValueMap (Request reqMessage) =
+    let routeData = reqMessage.GetRouteData()
+    routeData.Values
+    |> Seq.choose (fun (KeyValue(k, v)) -> 
+      if v = null then 
+        None 
+      else 
+        Some (k, string v))
     |> Map.ofSeq
 
   let getMethod (Request reqMessage) =

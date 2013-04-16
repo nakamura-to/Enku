@@ -113,15 +113,13 @@ route "path/07/{?id}" <| fun _ ->
   Advice.around [log ; log2] <|
   [ 
     post, fun req -> async {
-      let values = Request.getRouteValues req
-      let id = Map.tryFind "id" values
+      let id = Request.getRouteValue "id" req
       let id = match id with Some v -> v | _ -> ""
       printfn "MAIN: POST path/07, %s" id
       return Response.OK {Name = "post"; Age = 20} }
 
     get, fun req -> async {
-      let values = Request.getRouteValues req
-      let id = Map.tryFind "id" values
+      let id = Request.getRouteValue "id" req
       let id = match id with Some v -> v | _ -> ""
       printfn "MAIN: GET path/07, id=%s" id
       return Response.OK {Name = "get"; Age = 20}
