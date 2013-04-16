@@ -42,7 +42,7 @@ module Prelude =
     | Left of 'L
     | Right of 'R
 
-  type Validator<'V, 'R> = Validator of (string -> 'V option -> Either<string, 'R>) with
+  type Validator<'V, 'R> = Validator of (string -> 'V option -> Either<string, 'R option>) with
     static member (<+>) (Validator(x), Validator(y)) = Validator(fun name value ->
       match x name value with
       | Right ret -> y name ret
@@ -51,18 +51,18 @@ module Prelude =
   type ValidationContext() =
     let errorMessages = ResizeArray<string>()
     member this.Message = Seq.toList errorMessages
-    member private this.Run(validator, name, value) =
+    member private this.Run((Validator validator), name, value) =
       match validator name value with
-      | Right ret -> Some ret
+      | Right ret -> ret
       | Left message ->
         errorMessages.Add(message)
         None
-    member this.Eval(value, name, (Validator validator)) =
+    member this.Eval(value, name, validator) =
       this.Run(validator, name, value)
-    member this.Eval(map: Map<_, _>, key, (Validator validator)) =
+    member this.Eval(map: Map<_, _>, key, validator) =
       let value = Map.tryFind key map
       this.Run(validator, key, value)
-    member this.Eval(expr: Expr<'T>, (Validator validator)) =
+    member this.Eval(expr: Expr<'T>, validator) =
       match expr with
       | PropertyGet(receiver, propInfo, _) ->
         match receiver with

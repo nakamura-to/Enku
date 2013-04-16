@@ -88,7 +88,7 @@ module Validator =
   let _required name value format =
     match value with
     | Some value -> 
-      Right value
+      Right (Some value)
     | _ ->
       Left (sprintf format name)
 

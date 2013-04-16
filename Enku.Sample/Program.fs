@@ -34,7 +34,7 @@ module V = Validator
 let baseAddress = new Uri("http://localhost:9090/")
 let config = new HttpSelfHostConfiguration(baseAddress)
 config.IncludeErrorDetailPolicy <- IncludeErrorDetailPolicy.Always
-//config.Formatters.JsonFormatter.SerializerSettings.ContractResolver <- CamelCasePropertyNamesContractResolver()
+config.Formatters.JsonFormatter.SerializerSettings.ContractResolver <- CamelCasePropertyNamesContractResolver()
 //config.Formatters.JsonFormatter.SerializerSettings.
 let route = Routing.route config
 
