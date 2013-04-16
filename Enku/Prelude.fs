@@ -25,10 +25,6 @@ open Microsoft.FSharp.Quotations.Patterns
 [<AutoOpen>]
 module Prelude = 
 
-  type Either<'L, 'R> =
-    | Left of 'L
-    | Right of 'R
-
   module Map =
 
     let findHead key (map: Map<_, _ list>) =
@@ -42,58 +38,49 @@ module Prelude =
         | [] -> None
         | h :: _ -> Some h
 
+  type Either<'L, 'R> =
+    | Left of 'L
+    | Right of 'R
+
   type Validator<'V, 'R> = Validator of (string -> 'V option -> Either<string, 'R>) with
     static member (<+>) (Validator(x), Validator(y)) = Validator(fun name value ->
       match x name value with
       | Right ret -> y name ret
       | Left msg -> Left msg)
 
-  exception internal ValidationError of string
-
   type ValidationContext() =
     let errorMessages = ResizeArray<string>()
     member this.Message = Seq.toList errorMessages
-    member private this.MakeLazyValue(validator, name, value) =
-      lazy (
-        match validator name value with
-        | Right ret -> ret
-        | Left message -> raise <| ValidationError message)
-    member private this.Force(lazyValue: Lazy<_>) =
-        try
-          lazyValue.Force () |> ignore
-        with
-        | ValidationError message -> 
-          errorMessages.Add(message)
+    member private this.Run(validator, name, value) =
+      match validator name value with
+      | Right ret -> Some ret
+      | Left message ->
+        errorMessages.Add(message)
+        None
     member this.Eval((name, value), (Validator validator)) =
-      let lazyValue = this.MakeLazyValue(validator, name, value)
-      this.Force(lazyValue)
-      lazyValue
+      this.Run(validator, name, value)
     member this.Eval(map: Map<_, _>, key, (Validator validator)) =
       let value = Map.tryFind key map
-      let lazyValue = this.MakeLazyValue(validator, key, value)
-      this.Force(lazyValue)
-      lazyValue
+      this.Run(validator, key, value)
     member this.Eval(expr: Expr<'T>, (Validator validator)) =
-      let makeErrorValue message =
-        lazy(raise <| ValidationError message)
-      let lazyValue =
-        match expr with
-        | PropertyGet(receiver, propInfo, _) ->
+      match expr with
+      | PropertyGet(receiver, propInfo, _) ->
+        match receiver with
+        | Some receiver ->
           match receiver with
-          | Some receiver ->
-            match receiver with
-            | Value(receiver, _) ->
-              let key = propInfo.Name
-              let value = propInfo.GetValue(receiver, null) :?> 'T
-              this.MakeLazyValue(validator, key, Some value)
-            |_ -> 
-              makeErrorValue (sprintf "%A is not a Value expression" receiver)
+          | Value(receiver, _) ->
+            let key = propInfo.Name
+            let value = propInfo.GetValue(receiver, null) :?> 'T
+            this.Run(validator, key, Some value)
           |_ -> 
-            makeErrorValue (sprintf "%A is not an instance property" propInfo.Name)
-        | _ -> 
-          makeErrorValue (sprintf "%A is not a property" expr)
-      this.Force(lazyValue)
-      lazyValue
+            errorMessages.Add(sprintf "%A is not a Value expression" receiver)
+            None
+        |_ -> 
+          errorMessages.Add(sprintf "%A is not an instance property" propInfo.Name)
+          None
+      | _ -> 
+        errorMessages.Add(sprintf "%A is not a property" expr)
+        None
 
   type Request = Request of HttpRequestMessage
 
