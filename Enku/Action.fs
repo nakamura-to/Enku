@@ -18,33 +18,8 @@ open System.Net.Http
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Action = 
 
-  let make predicate = Action(fun req body ->
+  let run req (action: Action) (predicate : Constraint) = 
     if predicate req then
-      Some <| body req
-    else 
-      None)
-
-  let run req body (Action f) = f req body
-
-[<AutoOpen>]
-module ActionDirectives =
-
-  let private isTargetRequest m (Request req) = req.Method = m
-
-  let get = Action.make (isTargetRequest HttpMethod.Get)
-  let post = Action.make (isTargetRequest HttpMethod.Post)
-  let put = Action.make (isTargetRequest HttpMethod.Put)
-  let delete = Action.make (isTargetRequest HttpMethod.Delete)
-  let head = Action.make (isTargetRequest HttpMethod.Head)
-  let options = Action.make (isTargetRequest HttpMethod.Options)
-  let trace = Action.make (isTargetRequest HttpMethod.Trace)
-  let patch = Action.make (isTargetRequest <| HttpMethod "PATCH")
-  let any = Action.make (fun _ -> true)
-
-[<AutoOpen>]
-module ActionOperators =
-
-  let (<|>) (x: Action) (y: Action) = Action(fun req body ->
-      match Action.run req body x with
-      | Some result -> Some result
-      | _ -> Action.run req body y)
+      Some <| action req
+    else
+      None

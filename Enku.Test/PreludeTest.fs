@@ -17,8 +17,8 @@ module RequestTest =
     let req = Request <| new HttpRequestMessage(RequestUri = Uri("http://example/person?id=10&name=hoge"))
     let qs = Request.getQueryStrings req
     let vc = ValidationContext()
-    let id = vc.Eval(qs, "id", V.int <&> V.required)
-    let name = vc.Eval(qs, "name", V.string <&> V.required)
+    let id = vc.Eval(qs, "id", V.int <+> V.required)
+    let name = vc.Eval(qs, "name", V.string <+> V.required)
     match vc.Message with
     | [] ->
       id.Value |> isEqualTo 10
@@ -32,9 +32,9 @@ module RequestTest =
     let req = Request <| new HttpRequestMessage(RequestUri = Uri("http://example/person?id=foo&name=hoge&age=bar"))
     let qs = Request.getQueryStrings req
     let vc = ValidationContext()
-    let id = vc.Eval(qs, "id",V.int <&> V.required)
-    let name = vc.Eval(qs, "name", V.string <&> V.required)
-    let age = vc.Eval(qs, "age", V.int <&> V.required)
+    let id = vc.Eval(qs, "id",V.int <+> V.required)
+    let name = vc.Eval(qs, "name", V.string <+> V.required)
+    let age = vc.Eval(qs, "age", V.int <+> V.required)
     match vc.Message with
     | [] -> failwith "validatioin should be fail"
     | messages -> printfn "%A" messages; List.length messages |> isEqualTo 2

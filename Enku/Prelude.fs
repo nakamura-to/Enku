@@ -43,7 +43,7 @@ module Prelude =
         | h :: _ -> Some h
 
   type Validator<'V, 'R> = Validator of (string -> 'V option -> Either<string, 'R>) with
-    static member (<&>) (Validator(x), Validator(y)) = Validator(fun name value ->
+    static member (<+>) (Validator(x), Validator(y)) = Validator(fun name value ->
       match x name value with
       | Right ret -> y name ret
       | Left msg -> Left msg)
@@ -99,15 +99,31 @@ module Prelude =
 
   type Response = Response of (HttpRequestMessage -> HttpResponseMessage)
 
-  type ActionBody = (Request -> Async<Response>)
+  type Action = (Request -> Async<Response>)
 
-  type Around = Around of (Request -> ActionBody -> Async<Response>)
+  type Around = Around of (Request -> Action -> Async<Response>)
 
-  type Action = Action of (Request -> ActionBody -> Async<Response> option)
+  type Constraint = (Request -> bool)
 
   type ErrorHandler = (Request -> exn -> Response)
 
   type FormatError(message: string, innerException: exn) =
     inherit Exception(message, innerException)
 
+  let private isTargetMethod m = fun (Request req) -> req.Method = m
 
+  let get : Constraint = isTargetMethod HttpMethod.Get
+  let post : Constraint = isTargetMethod HttpMethod.Post
+  let put : Constraint = isTargetMethod HttpMethod.Put
+  let delete : Constraint = isTargetMethod HttpMethod.Delete
+  let head : Constraint = isTargetMethod HttpMethod.Head
+  let options : Constraint = isTargetMethod HttpMethod.Options
+  let trace : Constraint = isTargetMethod HttpMethod.Trace
+  let patch : Constraint = isTargetMethod <| HttpMethod "PATCH"
+  let any : Constraint = (fun _ -> true)
+
+  let (<|>) (x: Constraint) (y: Constraint) : Constraint = 
+    fun req -> x req || y req
+
+  let (<&>) (x: Constraint) (y: Constraint) : Constraint = 
+    fun req -> x req && y req

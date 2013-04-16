@@ -22,6 +22,6 @@ module Advice =
       x req (fun req ->
         y req body))
     let (Around f) = interceptors |> List.reduce chain
-    actions |> List.map (fun (action: Action, body: ActionBody) ->
-      let newBody : ActionBody = fun req -> f req body
-      action, newBody)
+    actions |> List.map (fun (predicate: Constraint, action: Action) ->
+      let wrapped : Action = fun req -> f req action
+      predicate, wrapped)

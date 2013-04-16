@@ -101,9 +101,9 @@ route "path/06" <| fun _ ->
       printfn "MAIN: POST path/06"
       let! form = Request.asyncReadAsForm req
       let vc = ValidationContext()
-      let aaa = vc.Eval(form, "aaa", V.head <&> V.required)
-      let bbb = vc.Eval(form, "bbb", V.head <&> V.required)
-      let ccc = vc.Eval(form, "ccc", V.head <&> V.required)
+      let aaa = vc.Eval(form, "aaa", V.head <+> V.required)
+      let bbb = vc.Eval(form, "bbb", V.head <+> V.required)
+      let ccc = vc.Eval(form, "ccc", V.head <+> V.required)
       vc.Message |> raiseFirst
       return Response.OK (aaa.Value + bbb.Value + ccc.Value) }
   ],
@@ -139,7 +139,7 @@ route "path/08" <| fun _ ->
         | Right person ->
           let vc = ValidationContext()
           let name = vc.Eval(<@ person.Name @>, V.required)
-          let age = vc.Eval(<@ person.Age @>, V.range 15 20 <&> V.required)
+          let age = vc.Eval(<@ person.Age @>, V.range 15 20 <+> V.required)
           match vc.Message with
           | [] -> { Name = name.Value; Age = age.Value }
           | h :: _ ->  Response.BadRequest(h) |> Response.exit

@@ -24,8 +24,8 @@ module ActionTest =
     let reqMessage = new HttpRequestMessage(HttpMethod.Get, "person/1")
     let resMessage = new HttpResponseMessage()
     let req = Request <| reqMessage
-    let body = fun req -> async { return Response(fun _ -> resMessage) }
-    match Action.run req body get with
+    let action = fun req -> async { return Response(fun _ -> resMessage) }
+    match Action.run req action get with
     | Some r ->
       Async.RunSynchronously r |> fun (Response builder) -> 
         builder reqMessage |> isEqualTo resMessage
@@ -34,8 +34,8 @@ module ActionTest =
     let reqMessage = new HttpRequestMessage(HttpMethod.Post, "person")
     let resMessage = new HttpResponseMessage()
     let req = Request reqMessage
-    let body = fun req -> async { return Response(fun _ -> resMessage) }
-    match Action.run req body post with
+    let action = fun req -> async { return Response(fun _ -> resMessage) }
+    match Action.run req action post with
     | Some r ->
       Async.RunSynchronously r |> fun (Response builder) -> 
         builder reqMessage |> isEqualTo resMessage
@@ -46,16 +46,16 @@ module ActionTest =
     let reqMessage =  new HttpRequestMessage(HttpMethod.Get, "person/1")
     let resMessage = new HttpResponseMessage()
     let req = Request reqMessage
-    let body = fun req -> async { return Response(fun _ -> resMessage) }
-    match Action.run req body post with
+    let action = fun req -> async { return Response(fun _ -> resMessage) }
+    match Action.run req action post with
     | Some _ -> failwith "fail"
     | _ -> ()
 
     let reqMessage = new HttpRequestMessage(HttpMethod.Post, "person")
     let resMessage = new HttpResponseMessage()
     let req = Request reqMessage
-    let body = fun req -> async { return Response(fun _ -> resMessage) }
-    match Action.run req body get with
+    let action = fun req -> async { return Response(fun _ -> resMessage) }
+    match Action.run req action get with
     | Some _ -> failwith "fail"
     | _ -> ()
 
