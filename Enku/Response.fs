@@ -145,14 +145,14 @@ module Response =
   let Found value =
     make HttpStatusCode.Found value
   /// HTTP status 302
-  let Redirect value = fun (reqMessage: HttpRequestMessage) ->
+  let Redirect value =
     make HttpStatusCode.Redirect value
   /// HTTP status 302
-  let ``302`` value = fun (reqMessage: HttpRequestMessage) ->
+  let ``302`` value =
     make HttpStatusCode.Redirect value
 
   /// HTTP status 303
-  let RedirectMethod value = fun (reqMessage: HttpRequestMessage) ->
+  let RedirectMethod value = 
     make HttpStatusCode.RedirectMethod value
   /// HTTP status 303
   let SeeOther value =
@@ -238,17 +238,17 @@ module Response =
     make HttpStatusCode.NotAcceptable value
 
   /// HTTP status 407
-  let ProxyAuthenticationRequired value = fun (reqMessage: HttpRequestMessage) ->
+  let ProxyAuthenticationRequired value = 
     make HttpStatusCode.ProxyAuthenticationRequired value
   /// HTTP status 407
-  let ``407`` value = fun (reqMessage: HttpRequestMessage) ->
+  let ``407`` value = 
     make HttpStatusCode.ProxyAuthenticationRequired value
 
   /// HTTP status 408
-  let RequestTimeout value = fun (reqMessage: HttpRequestMessage) ->
+  let RequestTimeout value = 
     make HttpStatusCode.RequestTimeout value
   /// HTTP status 408
-  let ``408`` value = fun (reqMessage: HttpRequestMessage) ->
+  let ``408`` value = 
     make HttpStatusCode.RequestTimeout value
 
   /// HTTP status 409
@@ -287,24 +287,24 @@ module Response =
     make HttpStatusCode.RequestEntityTooLarge value
 
   /// HTTP status 414
-  let RequestUriTooLong value = fun (reqMessage: HttpRequestMessage) ->
+  let RequestUriTooLong value =
     make HttpStatusCode.RequestUriTooLong value
   /// HTTP status 414
-  let ``414`` value = fun (reqMessage: HttpRequestMessage) ->
+  let ``414`` value =
     make HttpStatusCode.RequestUriTooLong value
 
   /// HTTP status 415
-  let UnsupportedMediaType value = fun (reqMessage: HttpRequestMessage) ->
+  let UnsupportedMediaType value = 
     make HttpStatusCode.UnsupportedMediaType value
   /// HTTP status 415
-  let ``415`` value = fun (reqMessage: HttpRequestMessage) ->
+  let ``415`` value = 
     make HttpStatusCode.UnsupportedMediaType value
 
   /// HTTP status 416
-  let RequestedRangeNotSatisfiable value = fun (reqMessage: HttpRequestMessage) ->
+  let RequestedRangeNotSatisfiable value = 
     make HttpStatusCode.RequestedRangeNotSatisfiable value
   /// HTTP status 416
-  let ``416`` value = fun (reqMessage: HttpRequestMessage) ->
+  let ``416`` value = 
     make HttpStatusCode.RequestedRangeNotSatisfiable value
 
   /// HTTP status 417
@@ -343,22 +343,22 @@ module Response =
     make HttpStatusCode.BadGateway value
 
   /// HTTP status 503
-  let ServiceUnavailable value = fun (reqMessage: HttpRequestMessage) ->
+  let ServiceUnavailable value = 
     make HttpStatusCode.ServiceUnavailable value
   /// HTTP status 503
-  let ``503`` value = fun (reqMessage: HttpRequestMessage) ->
+  let ``503`` value = 
     make HttpStatusCode.ServiceUnavailable value
 
   /// HTTP status 504
-  let GatewayTimeout value = fun (reqMessage: HttpRequestMessage) ->
+  let GatewayTimeout value = 
     make HttpStatusCode.GatewayTimeout value
   /// HTTP status 504
-  let ``504`` value = fun (reqMessage: HttpRequestMessage) ->
+  let ``504`` value = 
     make HttpStatusCode.GatewayTimeout value
 
   /// HTTP status 505
-  let HttpVersionNotSupported value = fun (reqMessage: HttpRequestMessage) ->
+  let HttpVersionNotSupported value = 
     make HttpStatusCode.HttpVersionNotSupported value
   /// HTTP status 505
-  let ``505`` value = fun (reqMessage: HttpRequestMessage) ->
+  let ``505`` value = 
     make HttpStatusCode.HttpVersionNotSupported value
