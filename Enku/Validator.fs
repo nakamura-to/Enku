@@ -19,88 +19,97 @@ open System.Net.Http
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Validator =
 
-  let private _head name values format = 
-    match values with
-    | Some values ->
+  module Helper =
+
+    let format fmt defaultFmt = 
+      sprintf <| match fmt with Some fmt -> fmt | _ -> defaultFmt
+
+    let head name values fmt = 
       match values with
-      | [] -> Left (sprintf format name)
-      | h :: _ -> Right (Some h)
-    | _ ->
-      Right None
+      | Some values ->
+        match values with
+        | [] -> Left (format fmt "%s is not found." name)
+        | h :: _ -> Right (Some h)
+      | _ ->
+        Right None
+
+    let int name value fmt =
+      match value with
+      | Some value ->
+        match Int32.TryParse (string (box value)) with
+        | true, n -> Right (Some n)
+        | _ -> Left (format fmt "%s is not a int." name)
+      | _ ->
+        Right None
+
+    let maxlength max name value fmt =
+      match value with
+      | Some s ->
+        if String.length s > max then
+          Left (format fmt "%s can not be greater than %d characters." name max)
+        else
+          Right (Some s)
+      | _ ->
+        Right None
+
+    let range min max name value fmt =
+      let makeMessage() =
+        format fmt "%s is not in the range %A through %A." name min max
+      match value with
+      | Some n ->
+        if n < min then
+          Left (makeMessage())
+        elif n > max then
+          Left (makeMessage())
+        else
+          Right (Some n)
+      | _ ->
+        Right None
+
+    let required name value fmt =
+      match value with
+      | Some value -> 
+        Right (Some value)
+      | _ ->
+        Left (format fmt "%s is required." name)
+
+    let string _ value =
+      match value with
+      | Some value ->
+        Right (Some (string (box value)))
+      | _ ->
+        Right None
+
 
   let head = Validator(fun name values ->
-    _head name values "%s is not found")
+    Helper.head name values None)
 
-  let headWith format = Validator(fun name values ->
-    _head name values format)
-
-  let private _int name value format =
-    match value with
-    | Some value ->
-      match Int32.TryParse (string (box value)) with
-      | true, n -> Right (Some n)
-      | _ -> Left (sprintf format name)
-    | _ ->
-      Right None
+  let headWith fmt = Validator(fun name values ->
+    Helper.head name values (Some fmt))
 
   let int = Validator(fun name value ->
-    _int name value "%s is not Int32")
+    Helper.int name value None)
 
-  let intWith format = Validator(fun name value ->
-    _int name value format)
+  let intWith fmt = Validator(fun name value ->
+    Helper.int name value (Some fmt))
 
-  let private _length max name value format =
-    match value with
-    | Some s ->
-      // TODO
-      if String.length s >= max then
-        Left (sprintf format name max)
-      else
-        Right (Some s)
-    | _ ->
-      Right None
+  let maxlength max = Validator(fun name value ->
+    Helper.maxlength max name value None)
 
-  let length max = Validator(fun name value ->
-    _length max name value "%s is out of range (max=%A)")
-
-  let lengthWith max format = Validator(fun name value ->
-    _length max name value format)
-
-  let private _range min max name value format =
-    match value with
-    | Some n ->
-      // TODO
-      if n <= min then
-        Left (sprintf format name min max)
-      elif n >= max then
-        Left (sprintf format name min max)
-      else
-        Right (Some n)
-    | _ ->
-      Right None
+  let maxlengthWith max fmt = Validator(fun name value ->
+    Helper.maxlength max name value (Some fmt))
 
   let range min max = Validator(fun name value ->
-    _range min max name value "%s is out of range (min=%A, max=%A)")
+    Helper.range min max name value None)
 
-  let rangeWith min max format = Validator(fun name value ->
-    _range min max name value format)
-
-  let _required name value format =
-    match value with
-    | Some value -> 
-      Right (Some value)
-    | _ ->
-      Left (sprintf format name)
+  let rangeWith min max fmt = Validator(fun name value ->
+    Helper.range min max name value (Some fmt))
 
   let required = Validator(fun name value ->
-    _required name value "%s is required")
+    Helper.required name value None)
 
-  let requiredWith format = Validator(fun name value ->
-    _required name value format)
+  let requiredWith fmt = Validator(fun name value ->
+    Helper.required name value (Some fmt))
 
   let string = Validator(fun name value ->
-    match value with
-    | Some value ->
-      Right (Some (string (box value)))
-    | _ ->
-      Right None)
+    Helper.string name value)

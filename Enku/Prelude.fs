@@ -54,8 +54,8 @@ module Prelude =
     member private this.Run((Validator validator), name, value) =
       match validator name value with
       | Right ret -> ret
-      | Left message ->
-        errorMessages.Add(message)
+      | Left msg ->
+        errorMessages.Add(msg)
         None
     member this.Eval(value, name, validator) =
       this.Run(validator, name, value)

@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="Assert.fs" />
     <Compile Include="PreludeTest.fs" />
+    <Compile Include="ValidatorTest.fs" />
     <Compile Include="ActionTest.fs" />
     <None Include="packages.config" />
   </ItemGroup>

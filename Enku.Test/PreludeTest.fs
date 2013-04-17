@@ -46,7 +46,7 @@ module RequestTest =
   let ``ValidationContext.Eval should eval record properties``() =
     let person = { Name = "hoge"; Age = 30 }
     let vc = ValidationContext()
-    vc.Eval(<@ person.Name @>, V.length 10) |> ignore
+    vc.Eval(<@ person.Name @>, V.maxlength 10) |> ignore
     vc.Eval(<@ person.Age @>, V.range 10 40) |> ignore
     match vc.Message with
     | [] ->
@@ -59,11 +59,11 @@ module RequestTest =
   let ``ValidationContext.Eval should eval record properties and produce validation error messages``() =
     let person = { Name = "hoge"; Age = 50 }
     let vc = ValidationContext()
-    vc.Eval(<@ person.Name @>, V.length 2) |> ignore
+    vc.Eval(<@ person.Name @>, V.maxlength 2) |> ignore
     vc.Eval(<@ person.Age @>, V.range 10 40) |> ignore
     match vc.Message with
     | messages-> 
       List.length messages |> isEqualTo 2
-      messages.[0] |> isEqualTo "Name is out of range (max=2)"
-      messages.[1] |> isEqualTo "Age is out of range (min=10, max=40)"
+      messages.[0] |> isEqualTo "Name can not be greater than 2 characters."
+      messages.[1] |> isEqualTo "Age is not in the range 10 through 40."
     |> ignore

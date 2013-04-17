@@ -18,3 +18,6 @@ module Assert =
   let isEqualTo expected actual =
     if expected <> actual then
       failwithf "expected:\n%A\nactual:\n%A" expected actual
+
+  let fail () =
+    failwith "assertion failed"
