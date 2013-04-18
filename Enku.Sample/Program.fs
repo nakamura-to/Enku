@@ -104,7 +104,7 @@ route "path/06" <| fun _ ->
       let aaa = vc.Eval(form, "aaa", V.head <+> V.required)
       let bbb = vc.Eval(form, "bbb", V.head <+> V.required)
       let ccc = vc.Eval(form, "ccc", V.head <+> V.required)
-      vc.Message |> raiseFirst
+      vc.Errors |> raiseFirst
       return Response.OK (aaa.Value + bbb.Value + ccc.Value) }
   ],
   handleError
@@ -138,7 +138,7 @@ route "path/08" <| fun _ ->
           let vc = ValidationContext()
           let name = vc.Eval(<@ person.Name @>, V.required)
           let age = vc.Eval(<@ person.Age @>, V.range 15 20 <+> V.required)
-          match vc.Message with
+          match vc.Errors with
           | [] -> { Name = name.Value; Age = age.Value }
           | h :: _ ->  Response.BadRequest(h) |> Routing.exit
         | Error (head, _) -> Response.BadRequest head |> Routing.exit

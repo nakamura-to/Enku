@@ -38,24 +38,24 @@ module Prelude =
         | [] -> None
         | h :: _ -> Some h
 
-  type ValidatorResult<'ok, 'error> =
+  type ValidationResult<'ok, 'error> =
     | Ok of 'ok
     | Error of 'error
 
-  type Validator<'value, 'result> = Validator of (string -> 'value option -> ValidatorResult<'result option, string>) with
+  type Validator<'value, 'result> = Validator of (string -> 'value option -> ValidationResult<'result option, string>) with
     static member (<+>) (Validator(x), Validator(y)) = Validator(fun name value ->
       match x name value with
       | Ok ret -> y name ret
       | Error msg -> Error msg)
 
   type ValidationContext() =
-    let errorMessages = ResizeArray<string>()
-    member this.Message = Seq.toList errorMessages
+    let errors = ResizeArray<string>()
+    member this.Errors = Seq.toList errors
     member private this.Run((Validator validator), name, value) =
       match validator name value with
       | Ok ret -> ret
       | Error msg ->
-        errorMessages.Add(msg)
+        errors.Add(msg)
         None
     member this.Eval(value, name, validator) =
       this.Run(validator, name, value)
@@ -73,13 +73,13 @@ module Prelude =
             let value = propInfo.GetValue(receiver, null) :?> 'T
             this.Run(validator, name, Some value)
           |_ -> 
-            errorMessages.Add(sprintf "%A is not a Value expression" receiver)
+            errors.Add(sprintf "%A is not a Value expression" receiver)
             None
         |_ -> 
-          errorMessages.Add(sprintf "%A is not an instance property" propInfo.Name)
+          errors.Add(sprintf "%A is not an instance property" propInfo.Name)
           None
       | _ -> 
-        errorMessages.Add(sprintf "%A is not a property" expr)
+        errors.Add(sprintf "%A is not a property" expr)
         None
 
   type Request = Request of HttpRequestMessage

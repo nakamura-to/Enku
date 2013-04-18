@@ -19,7 +19,7 @@ module RequestTest =
     let vc = ValidationContext()
     let id = vc.Eval(qs, "id", V.int <+> V.required)
     let name = vc.Eval(qs, "name", V.string <+> V.required)
-    match vc.Message with
+    match vc.Errors with
     | [] ->
       id.Value |> isEqualTo 10
       name.Value |> isEqualTo "hoge"
@@ -35,7 +35,7 @@ module RequestTest =
     let id = vc.Eval(qs, "id", V.int <+> V.required)
     let name = vc.Eval(qs, "name", V.string <+> V.required)
     let age = vc.Eval(qs, "age", V.int <+> V.required)
-    match vc.Message with
+    match vc.Errors with
     | [] -> failwith "validatioin should be fail"
     | messages -> printfn "%A" messages; List.length messages |> isEqualTo 2
     |> ignore
@@ -48,7 +48,7 @@ module RequestTest =
     let vc = ValidationContext()
     vc.Eval(<@ person.Name @>, V.maxlength 10) |> ignore
     vc.Eval(<@ person.Age @>, V.range 10 40) |> ignore
-    match vc.Message with
+    match vc.Errors with
     | [] ->
       ()
     | h :: _ -> 
@@ -61,7 +61,7 @@ module RequestTest =
     let vc = ValidationContext()
     vc.Eval(<@ person.Name @>, V.maxlength 2) |> ignore
     vc.Eval(<@ person.Age @>, V.range 10 40) |> ignore
-    match vc.Message with
+    match vc.Errors with
     | messages-> 
       List.length messages |> isEqualTo 2
       messages.[0] |> isEqualTo "Name can not be greater than 2 characters."
