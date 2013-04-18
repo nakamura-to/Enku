@@ -28,29 +28,29 @@ module Validator =
       match values with
       | Some values ->
         match values with
-        | [] -> Left (format fmt "%s is not found." name)
-        | h :: _ -> Right (Some h)
+        | [] -> Error (format fmt "%s is not found." name)
+        | h :: _ -> Ok (Some h)
       | _ ->
-        Right None
+        Ok None
 
     let int name value fmt =
       match value with
       | Some value ->
         match Int32.TryParse (string (box value)) with
-        | true, n -> Right (Some n)
-        | _ -> Left (format fmt "%s is not a int." name)
+        | true, n -> Ok (Some n)
+        | _ -> Error (format fmt "%s is not a int." name)
       | _ ->
-        Right None
+        Ok None
 
     let maxlength max name value fmt =
       match value with
       | Some s ->
         if String.length s > max then
-          Left (format fmt "%s can not be greater than %d characters." name max)
+          Error (format fmt "%s can not be greater than %d characters." name max)
         else
-          Right (Some s)
+          Ok (Some s)
       | _ ->
-        Right None
+        Ok None
 
     let range min max name value fmt =
       let makeMessage() =
@@ -58,27 +58,27 @@ module Validator =
       match value with
       | Some n ->
         if n < min then
-          Left (makeMessage())
+          Error (makeMessage())
         elif n > max then
-          Left (makeMessage())
+          Error (makeMessage())
         else
-          Right (Some n)
+          Ok (Some n)
       | _ ->
-        Right None
+        Ok None
 
     let required name value fmt =
       match value with
       | Some value -> 
-        Right (Some value)
+        Ok (Some value)
       | _ ->
-        Left (format fmt "%s is required." name)
+        Error (format fmt "%s is required." name)
 
     let string _ value =
       match value with
       | Some value ->
-        Right (Some (string (box value)))
+        Ok (Some (string (box value)))
       | _ ->
-        Right None
+        Ok None
 
 
   let head = Validator(fun name values ->

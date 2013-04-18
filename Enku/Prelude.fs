@@ -38,23 +38,23 @@ module Prelude =
         | [] -> None
         | h :: _ -> Some h
 
-  type Either<'L, 'R> =
-    | Left of 'L
-    | Right of 'R
+  type ValidatorResult<'ok, 'error> =
+    | Ok of 'ok
+    | Error of 'error
 
-  type Validator<'V, 'R> = Validator of (string -> 'V option -> Either<string, 'R option>) with
+  type Validator<'value, 'result> = Validator of (string -> 'value option -> ValidatorResult<'result option, string>) with
     static member (<+>) (Validator(x), Validator(y)) = Validator(fun name value ->
       match x name value with
-      | Right ret -> y name ret
-      | Left msg -> Left msg)
+      | Ok ret -> y name ret
+      | Error msg -> Error msg)
 
   type ValidationContext() =
     let errorMessages = ResizeArray<string>()
     member this.Message = Seq.toList errorMessages
     member private this.Run((Validator validator), name, value) =
       match validator name value with
-      | Right ret -> ret
-      | Left msg ->
+      | Ok ret -> ret
+      | Error msg ->
         errorMessages.Add(msg)
         None
     member this.Eval(value, name, validator) =

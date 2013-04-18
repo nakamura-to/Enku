@@ -134,14 +134,14 @@ route "path/08" <| fun _ ->
   [ 
     post, fun req -> 
       let validate = function
-        | Right person ->
+        | Ok person ->
           let vc = ValidationContext()
           let name = vc.Eval(<@ person.Name @>, V.required)
           let age = vc.Eval(<@ person.Age @>, V.range 15 20 <+> V.required)
           match vc.Message with
           | [] -> { Name = name.Value; Age = age.Value }
           | h :: _ ->  Response.BadRequest(h) |> Routing.exit
-        | Left (head, _) -> Response.BadRequest head |> Routing.exit
+        | Error (head, _) -> Response.BadRequest head |> Routing.exit
       async {
         let! person = Request.asyncReadAs<Person> req
         let person = validate person

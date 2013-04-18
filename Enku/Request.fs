@@ -65,8 +65,8 @@ module Request =
     let errors = Seq.toList errors
     return
       match errors with
-      | [] -> Right result
-      | head :: tail -> Left (head, tail) }
+      | [] -> Ok result
+      | head :: tail -> Error (head, tail) }
 
   let getQueryString key (Request reqMessage) = 
     reqMessage.GetQueryNameValuePairs()
