@@ -68,7 +68,7 @@ module Response =
     make HttpStatusCode.SwitchingProtocols value
 
   /// HTTP status 200
-  let OK value =
+  let Ok value =
     make HttpStatusCode.OK value
   /// HTTP status 200
   let ``200`` value =

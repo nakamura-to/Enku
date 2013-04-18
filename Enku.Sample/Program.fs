@@ -61,10 +61,10 @@ let handleError = fun req e ->
 route "path/01/{?id}" <| fun _ ->
   [ 
     post, fun req -> async {
-      return Response.OK {Name = "post"; Age = 20} }
+      return Response.Ok {Name = "post"; Age = 20} }
 
     get, fun req -> async {
-      return Response.OK {Name = "get"; Age = 20} } 
+      return Response.Ok {Name = "get"; Age = 20} } 
   ], 
   fun req e -> Response.InternalServerError e
 
@@ -72,7 +72,7 @@ route "path/01/{?id}" <| fun _ ->
 route "path/02" <| fun _ -> 
   [ 
     get <|> post, fun req -> async {
-      return Response.OK {Name = "foo"; Age = 20} } 
+      return Response.Ok {Name = "foo"; Age = 20} } 
   ],
   handleError
 
@@ -81,7 +81,7 @@ route "path/04" <| fun _ ->
   [ 
     get, fun req -> async {
       printfn "MAIN: GET path/04"
-      return Response.OK {Name = "foo"; Age = 20} } 
+      return Response.Ok {Name = "foo"; Age = 20} } 
   ],
   handleError
 
@@ -89,7 +89,7 @@ route "path/05" <| fun _ ->
   [ 
     post, fun req -> async {
       let! content = Request.asyncReadAsString req
-      return Response.OK content }
+      return Response.Ok content }
   ],
   handleError
 
@@ -105,7 +105,7 @@ route "path/06" <| fun _ ->
       let bbb = vc.Eval(form, "bbb", V.head <+> V.required)
       let ccc = vc.Eval(form, "ccc", V.head <+> V.required)
       vc.Errors |> raiseFirst
-      return Response.OK (aaa.Value + bbb.Value + ccc.Value) }
+      return Response.Ok (aaa.Value + bbb.Value + ccc.Value) }
   ],
   handleError
 
@@ -116,13 +116,13 @@ route "path/07/{?id}" <| fun _ ->
       let id = Request.getRouteValue "id" req
       let id = match id with Some v -> v | _ -> ""
       printfn "MAIN: POST path/07, %s" id
-      return Response.OK {Name = "post"; Age = 20} }
+      return Response.Ok {Name = "post"; Age = 20} }
 
     get, fun req -> async {
       let id = Request.getRouteValue "id" req
       let id = match id with Some v -> v | _ -> ""
       printfn "MAIN: GET path/07, id=%s" id
-      return Response.OK {Name = "get"; Age = 20}
+      return Response.Ok {Name = "get"; Age = 20}
         |> Response.appendHeaders 
            [ ResponseHeader.Age <| TimeSpan(12, 13, 14) ] 
         |> Response.appendContentHeaders
@@ -145,7 +145,7 @@ route "path/08" <| fun _ ->
       async {
         let! person = Request.asyncReadAs<Person> req
         let person = validate person
-        return Response.OK person.Name }
+        return Response.Ok person.Name }
   ],
   handleError
 
