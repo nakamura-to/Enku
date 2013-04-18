@@ -20,11 +20,6 @@ open System.Net.Http
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Response =
 
-  exception internal Exit of Response
-
-  let exit response =
-    raise <| Exit response
-
   let appendHeaders headerSetters (Response resposeBuilder) = Response(fun (requestMessage) ->
     let responseMessage = resposeBuilder requestMessage
     let responseHeaders = responseMessage.Headers

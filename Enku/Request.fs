@@ -19,27 +19,30 @@ open System.Net.Http.Formatting
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Request =
 
-  type FormatterLogger(errors: ResizeArray<exn>) =
-    interface IFormatterLogger with
-      member this.LogError(errorPath: string, errorMessage: string) = 
-        if errorPath = null then invalidArg "errorPath" "The arg must not null"
-        if errorMessage = null then invalidArg "errorMessage" "The arg must not be null"
-        errors.Add(FormatError(errorPath, Exception(errorMessage)))
-      member this.LogError(errorPath: string, exn: exn) =
-        if errorPath = null then invalidArg "errorPath" "The arg must not null"
-        if exn = null then invalidArg "exn" "The arg must not be null"
-        errors.Add(FormatError(errorPath, exn))
+  module Helper =
 
-  let private toKeyValuesMap keyValuePairs =
-    keyValuePairs
-    |> Seq.groupBy (fun (KeyValue(key, _)) -> key)
-    |> Seq.map (fun (key, values) ->
-      let values =
-        values 
-        |> Seq.map (fun (KeyValue(_, value)) -> value) 
-        |> Seq.toList
-      key, values)
-    |> Map.ofSeq
+    type FormatterLogger(errors: ResizeArray<exn>) =
+      interface IFormatterLogger with
+        member this.LogError(errorPath: string, errorMessage: string) = 
+          if errorPath = null then invalidArg "errorPath" "The arg must not null"
+          if errorMessage = null then invalidArg "errorMessage" "The arg must not be null"
+          errors.Add(FormatError(errorPath, Exception(errorMessage)))
+        member this.LogError(errorPath: string, exn: exn) =
+          if errorPath = null then invalidArg "errorPath" "The arg must not null"
+          if exn = null then invalidArg "exn" "The arg must not be null"
+          errors.Add(FormatError(errorPath, exn))
+
+    let toKeyValuesMap keyValuePairs =
+      keyValuePairs
+      |> Seq.groupBy (fun (KeyValue(key, _)) -> key)
+      |> Seq.map (fun (key, values) ->
+        let values =
+          values 
+          |> Seq.map (fun (KeyValue(_, value)) -> value) 
+          |> Seq.toList
+        key, values)
+      |> Map.ofSeq
+
 
   let asyncReadAsString (Request reqMessage) =
     Async.AwaitTask <| reqMessage.Content.ReadAsStringAsync()
@@ -52,12 +55,12 @@ module Request =
 
   let asyncReadAsForm (Request reqMessage) = async {
     let! form = Async.AwaitTask <| reqMessage.Content.ReadAsAsync<FormDataCollection>()
-    return toKeyValuesMap form }
+    return Helper.toKeyValuesMap form }
 
   let asyncReadAs<'T> (Request reqMessage) = async {
     let formatters = reqMessage.GetConfiguration().Formatters
     let errors = ResizeArray()
-    let logger = FormatterLogger(errors)
+    let logger = Helper.FormatterLogger(errors)
     let! result = Async.AwaitTask <| reqMessage.Content.ReadAsAsync<'T>(formatters, logger)
     let errors = Seq.toList errors
     return
@@ -81,7 +84,7 @@ module Request =
 
   let getQueryStringsAll (Request reqMessage) = 
     reqMessage.GetQueryNameValuePairs()
-    |> toKeyValuesMap
+    |> Helper.toKeyValuesMap
 
   let getRouteValue key (Request reqMessage) =
     let routeData = reqMessage.GetRouteData()

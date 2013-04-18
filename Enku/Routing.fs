@@ -19,11 +19,24 @@ open System.Net.Http
 open System.Text.RegularExpressions
 open System.Web.Http
 
-[<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Routing =
 
-  let internal makeHandler controller = 
+  exception Exit of Response
+
+  let private regex = Regex(@"{\?(?<optional>[^}]*)}")
+
+  let parsePath path =
+    let defaults = Dictionary<string, obj>()
+    let path = regex.Replace(path, fun (m: Match) ->
+      let key = m.Groups.["optional"].Value
+      if defaults.ContainsKey(key) then
+        defaults.Remove(key) |> ignore
+      defaults.Add(key, RouteParameter.Optional)
+      "{" + key + "}")
+    path, defaults
+
+  let makeHandler controller = 
     { new HttpMessageHandler() with
       override this.SendAsync(reqMessage, cancellationToken) = 
         let req = Request reqMessage
@@ -41,26 +54,22 @@ module Routing =
           with e ->
             let (Response builder) = 
               match e with 
-              | Response.Exit builder ->
+              | Exit builder ->
                 builder
               | _ ->
                 errHandler req e
             return builder reqMessage }
         Async.StartAsTask(computation, cancellationToken = cancellationToken) }
-  
-  let internal regex = Regex(@"{\?(?<optional>[^}]*)}") 
 
-  let route (config: HttpConfiguration) url controller =
-    let defaults = Dictionary<string, obj>()
-    let url = regex.Replace(url, fun (m: Match) ->
-      let key = m.Groups.["optional"].Value
-      if defaults.ContainsKey(key) then
-        defaults.Remove(key) |> ignore
-      defaults.Add(key, RouteParameter.Optional)
-      "{" + key + "}")
+  let route (config: HttpConfiguration) path controller =
+    let path, defaults = parsePath path
+    let handler = makeHandler controller
     config.Routes.MapHttpRoute(
-      name = url,
-      routeTemplate = url,
+      name = path,
+      routeTemplate = path,
       defaults = defaults,
       constraints = null,
-      handler = makeHandler controller) |> ignore
+      handler = handler) |> ignore
+
+  let exit response =
+    raise <| Exit response

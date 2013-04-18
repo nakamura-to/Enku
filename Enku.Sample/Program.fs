@@ -140,8 +140,8 @@ route "path/08" <| fun _ ->
           let age = vc.Eval(<@ person.Age @>, V.range 15 20 <+> V.required)
           match vc.Message with
           | [] -> { Name = name.Value; Age = age.Value }
-          | h :: _ ->  Response.BadRequest(h) |> Response.exit
-        | Left (head, _) -> Response.BadRequest head |> Response.exit
+          | h :: _ ->  Response.BadRequest(h) |> Routing.exit
+        | Left (head, _) -> Response.BadRequest head |> Routing.exit
       async {
         let! person = Request.asyncReadAs<Person> req
         let person = validate person

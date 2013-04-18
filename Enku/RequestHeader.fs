@@ -20,164 +20,167 @@ open System.Net.Http.Formatting
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module RequestHeader =
 
-  let ofNullable (nullable: Nullable<_>) =
-    if nullable.HasValue then 
-      Some nullable.Value 
-    else 
-      None
+  module Helper =
 
-  let ofReferece value =
-    if value <> null then 
-      Some value 
-    else 
-      None
+    let ofNullable (nullable: Nullable<_>) =
+      if nullable.HasValue then 
+        Some nullable.Value 
+      else 
+        None
 
-  let tryPick seq =
-    Seq.tryPick (fun v -> Some v) seq
+    let ofReferece value =
+      if value <> null then 
+        Some value 
+      else 
+        None
+
+    let tryPick seq =
+      Seq.tryPick (fun v -> Some v) seq
+
 
   let Accept (Request req) = 
-    tryPick req.Headers.Accept
+    Helper.tryPick req.Headers.Accept
 
   let AcceptAll (Request req) = 
     Seq.toList req.Headers.Accept
 
   let AcceptCharset (Request req) = 
-    tryPick req.Headers.AcceptCharset
+    Helper.tryPick req.Headers.AcceptCharset
 
   let AcceptCharsetAll (Request req) = 
     Seq.toList req.Headers.AcceptCharset
 
   let AcceptEncoding (Request req) = 
-    tryPick req.Headers.AcceptEncoding
+    Helper.tryPick req.Headers.AcceptEncoding
 
   let AcceptEncodingAll (Request req) = 
     Seq.toList req.Headers.AcceptEncoding
 
   let AcceptLanguage (Request req) = 
-    tryPick req.Headers.AcceptLanguage
+    Helper.tryPick req.Headers.AcceptLanguage
 
   let AcceptLanguageAll (Request req) = 
     Seq.toList req.Headers.AcceptLanguage
 
   let Authorization (Request req) = 
-    ofReferece req.Headers.Authorization
+    Helper.ofReferece req.Headers.Authorization
 
   let CacheControl (Request req) = 
-    ofReferece req.Headers.CacheControl
+    Helper.ofReferece req.Headers.CacheControl
 
   let Connection (Request req) = 
-    tryPick req.Headers.Connection
+    Helper.tryPick req.Headers.Connection
 
   let ConnectionAll (Request req) = 
     Seq.toList req.Headers.Connection
 
   let ConnectionClose (Request req) = 
-    ofNullable req.Headers.ConnectionClose
+    Helper.ofNullable req.Headers.ConnectionClose
 
   let Date (Request req) = 
-    ofNullable req.Headers.Date
+    Helper.ofNullable req.Headers.Date
 
   let Expect (Request req) = 
-    tryPick req.Headers.Expect
+    Helper.tryPick req.Headers.Expect
 
   let ExpectAll (Request req) = 
     Seq.toList req.Headers.Expect
 
   let ExpectContinue  (Request req) = 
-    ofNullable req.Headers.ExpectContinue
+    Helper.ofNullable req.Headers.ExpectContinue
 
   let From (Request req) = 
-    ofReferece req.Headers.From
+    Helper.ofReferece req.Headers.From
 
   let Host (Request req) = 
-    ofReferece req.Headers.Host
+    Helper.ofReferece req.Headers.Host
 
   let IfMatch (Request req) = 
-    tryPick req.Headers.IfMatch
+    Helper.tryPick req.Headers.IfMatch
 
   let IfMatchAll (Request req) = 
     Seq.toList req.Headers.IfMatch
 
   let IfModifiedSince (Request req) = 
-    ofNullable req.Headers.IfModifiedSince
+    Helper.ofNullable req.Headers.IfModifiedSince
 
   let IfNoneMatch (Request req) = 
-    tryPick req.Headers.IfNoneMatch
+    Helper.tryPick req.Headers.IfNoneMatch
 
   let IfNoneMatchAll (Request req) = 
     Seq.toList req.Headers.IfNoneMatch
 
   let IfRange (Request req) = 
-    ofReferece req.Headers.IfRange
+    Helper.ofReferece req.Headers.IfRange
 
   let IfUnmodifiedSince (Request req) = 
-    ofNullable req.Headers.IfUnmodifiedSince
+    Helper.ofNullable req.Headers.IfUnmodifiedSince
 
   let MaxForwards  (Request req) = 
-    ofNullable req.Headers.MaxForwards
+    Helper.ofNullable req.Headers.MaxForwards
 
   let Pragma (Request req) = 
-    tryPick req.Headers.Pragma
+    Helper.tryPick req.Headers.Pragma
 
   let PragmaAll (Request req) = 
     Seq.toList req.Headers.Pragma
 
   let ProxyAuthorization (Request req) = 
-    ofReferece req.Headers.ProxyAuthorization
+    Helper.ofReferece req.Headers.ProxyAuthorization
 
   let Range (Request req) = 
-    ofReferece req.Headers.Range
+    Helper.ofReferece req.Headers.Range
 
   let Referrer (Request req) = 
-    ofReferece req.Headers.Referrer
+    Helper.ofReferece req.Headers.Referrer
 
   let TE (Request req) = 
-    tryPick req.Headers.TE
+    Helper.tryPick req.Headers.TE
 
   let TEAll (Request req) = 
     Seq.toList req.Headers.TE
 
   let Trailer (Request req) = 
-    tryPick req.Headers.Trailer
+    Helper.tryPick req.Headers.Trailer
 
   let TrailerAll (Request req) = 
     Seq.toList req.Headers.Trailer
 
   let TransferEncoding (Request req) = 
-    tryPick req.Headers.TransferEncoding
+    Helper.tryPick req.Headers.TransferEncoding
 
   let TransferEncodingAll (Request req) = 
     Seq.toList req.Headers.TransferEncoding
 
   let TransferEncodingChunked (Request req) = 
-    ofNullable req.Headers.TransferEncodingChunked
+    Helper.ofNullable req.Headers.TransferEncodingChunked
 
   let Upgrade (Request req) = 
-    tryPick req.Headers.Upgrade
+    Helper.tryPick req.Headers.Upgrade
 
   let UpgradeAll (Request req) = 
     Seq.toList req.Headers.Upgrade
 
   let UserAgent (Request req) = 
-    tryPick req.Headers.UserAgent
+    Helper.tryPick req.Headers.UserAgent
 
   let UserAgentAll (Request req) = 
     Seq.toList req.Headers.UserAgent
 
   let Via (Request req) = 
-    tryPick req.Headers.Via
+    Helper.tryPick req.Headers.Via
 
   let ViaAll (Request req) = 
     Seq.toList req.Headers.Via
 
   let Warning (Request req) = 
-    tryPick <| req.Headers.Warning
+    Helper.tryPick <| req.Headers.Warning
 
   let WarningAll (Request req) = 
     Seq.toList req.Headers.Warning
 
   let Cookie name (Request req) =
-    tryPick <| req.Headers.GetCookies(name)
+    Helper.tryPick <| req.Headers.GetCookies(name)
 
   let CookieAll (Request req) =
     Seq.toList <| req.Headers.GetCookies()
