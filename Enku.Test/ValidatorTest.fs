@@ -100,6 +100,57 @@ module ValidatorTest =
     | Left msg -> msg |> isEqualTo "x is not in the range 5M through 15M."
 
   [<Test>]
+  let ``Validator.range should accept a customized error message``() =
+    let (Validator validator) = Validator.rangeWith 5M 15M "[%s %A %A]" 
+    match validator "x" (Some 4M) with
+    | Right r -> fail()
+    | Left msg -> msg |> isEqualTo "[x 5M 15M]"
+
+  [<Test>]
+  let ``Validator.required should require a value``() =
+    let (Validator validator) = Validator.required
+    match validator "x" (Some "abcde") with
+    | Right r -> 
+      match r with
+      | Some r -> r |> isEqualTo "abcde"
+      | _ -> fail()
+    | _ -> fail()
+
+  [<Test>]
+  let ``Validator.range should recognize none as invalid``() =
+    let (Validator validator) = Validator.required
+    match validator "x" None with
+    | Right r -> fail()
+    | Left msg -> msg |> isEqualTo "x is required."
+
+  [<Test>]
+  let ``Validator.required should accept a customized error message``() =
+    let (Validator validator) = Validator.requiredWith "[%s]" 
+    match validator "x" None with
+    | Right r -> fail()
+    | Left msg -> msg |> isEqualTo "[x]"
+
+  [<Test>]
+  let ``Validator.string should strigify a value``() =
+    let (Validator validator) = Validator.string
+    match validator "x" (Some 123) with
+    | Right r -> 
+      match r with
+      | Some r -> r |> isEqualTo "123"
+      | _ -> fail()
+    | _ -> fail()
+
+  [<Test>]
+  let ``Validator.string should strigify a null value``() =
+    let (Validator validator) = Validator.string
+    match validator "x" (Some null) with
+    | Right r -> 
+      match r with
+      | Some r -> r |> isEqualTo ""
+      | _ -> fail()
+    | _ -> fail()
+
+  [<Test>]
   let ``validator should skip None value``() =
     let (Validator validator) = Validator.head
     match validator "x" None with
