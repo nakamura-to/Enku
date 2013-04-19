@@ -52,14 +52,14 @@ let route = Routing.route config
 route "example" <| fun _ -> 
   [ 
     get, fun req -> async {
-      return Response.OK "Accept GET" }
+      return Response.Ok "Accept GET" }
 
     put <|> post, fun req -> async {
       let! content = Request.asyncReadAsString req
-      return Response.OK <| "Accept PUT or POST: content=" + content }
+      return Response.Ok <| "Accept PUT or POST: content=" + content }
 
     any, fun req -> async {
-      return Response.OK "Accept any HTTP methods" }
+      return Response.Ok "Accept any HTTP methods" }
   ], 
   fun req e ->
     Response.InternalServerError e
