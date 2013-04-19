@@ -53,11 +53,16 @@ module Request =
   let asyncReadAsBytes (Request reqMessage) =
     Async.AwaitTask <| reqMessage.Content.ReadAsByteArrayAsync()
 
-  let asyncReadAsForm (Request reqMessage) = async {
-    let! form = Async.AwaitTask <| reqMessage.Content.ReadAsAsync<FormDataCollection>()
+  let asyncReadAs<'T> (Request reqMessage) = async {
+    let formatters = reqMessage.GetConfiguration().Formatters
+    let! result = Async.AwaitTask <| reqMessage.Content.ReadAsAsync<'T>(formatters) 
+    return result }
+
+  let asyncReadAsForm req = async {
+    let! form = asyncReadAs<FormDataCollection> req
     return Helper.toKeyValuesMap form }
 
-  let asyncReadAs<'T> (Request reqMessage) = async {
+  let asyncTryReadAs<'T> (Request reqMessage) = async {
     let formatters = reqMessage.GetConfiguration().Formatters
     let errors = ResizeArray()
     let logger = Helper.FormatterLogger(errors)
@@ -67,6 +72,13 @@ module Request =
       match errors with
       | [] -> Ok result
       | head :: tail -> Error (head, tail) }
+
+  let asyncTryReadAsForm req = async {
+    let! result = asyncTryReadAs<FormDataCollection> req
+    return
+      match result with
+      | Ok form -> Ok <| Helper.toKeyValuesMap form
+      | Error (head, tail) -> Error (head, tail) }
 
   let getQueryString key (Request reqMessage) = 
     reqMessage.GetQueryNameValuePairs()

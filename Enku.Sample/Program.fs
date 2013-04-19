@@ -32,11 +32,13 @@ open Enku
 
 module V = Validator
 
+let setupJsonFormatter (formatter: JsonMediaTypeFormatter) =
+  formatter.SerializerSettings.ContractResolver <- CamelCasePropertyNamesContractResolver()
+
 let baseAddress = new Uri("http://localhost:9090/")
 let config = new HttpSelfHostConfiguration(baseAddress)
 config.IncludeErrorDetailPolicy <- IncludeErrorDetailPolicy.Always
-config.Formatters.JsonFormatter.SerializerSettings.ContractResolver <- CamelCasePropertyNamesContractResolver()
-//config.Formatters.JsonFormatter.SerializerSettings.
+config.Formatters.JsonFormatter |> setupJsonFormatter
 let route = Routing.route config
 
 type Person = { Name: string; Age: int }
@@ -144,17 +146,30 @@ route "path/08" <| fun _ ->
           | h :: _ ->  Response.BadRequest(h) |> Routing.exit
         | Error (head, _) -> Response.BadRequest head |> Routing.exit
       async {
-        let! person = Request.asyncReadAs<Person> req
+        let! person = Request.asyncTryReadAs<Person> req
         let person = validate person
         return Response.Ok person.Name }
   ],
   handleError
 
+type ClinetHandler() =
+  inherit HttpClientHandler()
+  override this.SendAsync(req, token) =
+    if req <> null then
+      match req.Content with
+      | :? ObjectContent as content ->
+        match content.Formatter with
+        | :? JsonMediaTypeFormatter as formatter ->
+          setupJsonFormatter formatter
+        | _ -> ()
+      | _ -> ()
+    base.SendAsync(req, token)
+
 async {
   use server = new HttpSelfHostServer(config)
   do! Async.AwaitTask <| server.OpenAsync().ContinueWith(fun _ -> ())
 
-  use client = new HttpClient(BaseAddress = baseAddress)
+  use client = new HttpClient(new ClinetHandler(), BaseAddress = baseAddress)
   use! response = Async.AwaitTask <| client.GetAsync("path/01/abc")
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
   printfn "sample01: %A" content 
