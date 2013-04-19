@@ -22,19 +22,8 @@ module Response =
 
   let appendHeaders headerSetters (Response resposeBuilder) = Response(fun (requestMessage) ->
     let responseMessage = resposeBuilder requestMessage
-    let responseHeaders = responseMessage.Headers
-    headerSetters |> List.iter (fun setter -> setter responseHeaders)
+    headerSetters |> List.iter (fun setter -> setter responseMessage)
     responseMessage)
-
-  let appendContentHeaders headerSetters (Response responseBuilder) = Response(fun (requestMessage) ->
-    let responseMessage = responseBuilder requestMessage
-    let content = responseMessage.Content
-    if content = null then
-      responseMessage
-    else
-      let contentHeaders = content.Headers
-      headerSetters |> List.iter (fun setter -> setter contentHeaders)
-      responseMessage)
 
   let setReasonPhrase reasonPhrase (Response responseBuilder) = Response(fun (requestMessage) ->
     let responseMessage = responseBuilder requestMessage

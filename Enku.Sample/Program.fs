@@ -21,8 +21,9 @@
 module Program
 
 open System
-open System.Net.Http.Formatting
 open System.Net.Http
+open System.Net.Http.Formatting
+open System.Net.Http.Headers
 open System.Web.Http
 open System.Web.Http.SelfHost
 open Newtonsoft.Json.Serialization
@@ -122,11 +123,11 @@ route "path/07/{?id}" <| fun _ ->
       let id = Request.getRouteValue "id" req
       let id = match id with Some v -> v | _ -> ""
       printfn "MAIN: GET path/07, id=%s" id
-      return Response.Ok {Name = "get"; Age = 20}
+      return 
+        Response.Ok {Name = "get"; Age = 20}
         |> Response.appendHeaders 
-           [ ResponseHeader.Age <| TimeSpan(12, 13, 14) ] 
-        |> Response.appendContentHeaders
-           [ ContentHeader.ContentType <| Headers.MediaTypeHeaderValue("text/plain")] }
+           [ ResponseHeader.Age <| TimeSpan(12, 13, 14)
+             ResponseHeader.ContentType <| Headers.MediaTypeHeaderValue("text/plain")] }
   ],
   handleError
 

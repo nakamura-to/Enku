@@ -185,3 +185,86 @@ module RequestHeader =
   let CookieAll (Request req) =
     Seq.toList <| req.Headers.GetCookies()
 
+  let Allow (Request req) =
+    if req.Content = null then
+      None
+    else
+      Helper.tryPick <| req.Content.Headers.Allow
+
+  let AllowAll (Request req) =
+    if req.Content = null then
+      []
+    else
+      Seq.toList <| req.Content.Headers.Allow
+
+  let ContentDisposition (Request req) =
+    if req.Content = null then
+      None
+    else
+      Helper.ofReferece <| req.Content.Headers.ContentDisposition
+
+  let ContentEncoding (Request req) = 
+    if req.Content = null then
+      None
+    else
+      Helper.tryPick <| req.Content.Headers.ContentEncoding
+
+  let ContentEncodingAll (Request req) = 
+    if req.Content = null then
+      []
+    else
+      Seq.toList <| req.Content.Headers.ContentEncoding
+
+  let ContentLanguage (Request req) = 
+    if req.Content = null then
+      None
+    else
+      Helper.tryPick <| req.Content.Headers.ContentLanguage
+
+  let ContentLanguageAll (Request req) = 
+    if req.Content = null then
+      []
+    else
+      Seq.toList <| req.Content.Headers.ContentLanguage
+
+  let ContentLength (Request req) = 
+    if req.Content = null then
+      None
+    else
+      Helper.ofNullable <| req.Content.Headers.ContentLength
+
+  let ContentLocation (Request req) = 
+    if req.Content = null then
+      None
+    else
+      Helper.ofReferece <| req.Content.Headers.ContentLocation
+
+  let ContentMD5 (Request req) = 
+    if req.Content = null then
+      None
+    else
+      Helper.ofReferece <| req.Content.Headers.ContentMD5
+
+  let ContentRange (Request req) = fun ( res: HttpResponseMessage) ->
+    if req.Content = null then
+      None
+    else
+      Helper.ofReferece <| res.Content.Headers.ContentRange
+
+  let ContentType (Request req) = 
+    if req.Content = null then
+      None
+    else
+      Helper.ofReferece <| req.Content.Headers.ContentType
+
+  let Expires (Request req) = 
+    if req.Content = null then
+      None
+    else
+      Helper.ofNullable <| req.Content.Headers.Expires
+
+  let LastModified (Request req) = 
+    if req.Content = null then
+      None
+    else
+      Helper.ofNullable <| req.Content.Headers.LastModified
