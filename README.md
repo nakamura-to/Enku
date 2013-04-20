@@ -1,6 +1,6 @@
 # Enku - F# Lightweight Web API Framework
 
-Enku provides Web API in a F#-way.
+Enku encourages you to build Web API in a F#-way.
 
 - Simple
 - Powerful
@@ -77,6 +77,45 @@ Access
 
 ```
 http://localhost:9090/example
+```
+
+### Web Host Example
+
+Create a C# ASP.NET MVC 4 project with the Web API template.
+Add a F# library project and then create a following module.
+
+```fsharp
+namespace Api
+
+open Enku
+
+module WebApiConfig =
+
+  [<CompiledNameAttribute("Register")>]
+  let register config =
+    let route = Routing.route config
+
+    // routing
+    route "example" <| fun _ -> 
+      [ 
+        get, fun req -> async {
+          return Response.Ok "Accept GET" }
+
+        put <|> post, fun req -> async {
+          let! content = Request.asyncReadAsString req
+          return Response.Ok <| "Accept PUT or POST: content=" + content }
+
+        any, fun req -> async {
+          return Response.Ok "Accept any HTTP methods" }
+      ], 
+      fun req e ->
+        Response.InternalServerError e
+```
+
+In Global.asax, use the ablove WebApiConfig module instead of the original WebApiConfig class.
+
+```csharp
+WebApiConfig.Register(GlobalConfiguration.Configuration);
 ```
 
 ## License
