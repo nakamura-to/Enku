@@ -38,6 +38,7 @@ There are two ways to avoid this error:
 open System
 open System.Web.Http
 open System.Web.Http.SelfHost
+open Newtonsoft.Json.Serialization
 open Enku
 
 // configuration
@@ -46,6 +47,7 @@ let config =
   new HttpSelfHostConfiguration(
     baseAddress, 
     IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always)
+config.Formatters.JsonFormatter.SerializerSettings.ContractResolver <- CamelCasePropertyNamesContractResolver()
 let route = Routing.route config
 
 // routing
@@ -61,8 +63,7 @@ route "example" <| fun _ ->
     any, fun req -> async {
       return Response.Ok "Accept any HTTP methods" }
   ], 
-  fun req e ->
-    Response.InternalServerError e
+  fun req e -> Response.InternalServerError e
 
 // run server
 async {
@@ -87,12 +88,15 @@ Add a F# library project and then create a following module.
 ```fsharp
 namespace Api
 
+open System.Web.Http
+open Newtonsoft.Json.Serialization
 open Enku
 
 module WebApiConfig =
 
   [<CompiledNameAttribute("Register")>]
-  let register config =
+  let register (config: HttpConfiguration) =
+    config.Formatters.JsonFormatter.SerializerSettings.ContractResolver <- CamelCasePropertyNamesContractResolver()
     let route = Routing.route config
 
     // routing
@@ -108,8 +112,7 @@ module WebApiConfig =
         any, fun req -> async {
           return Response.Ok "Accept any HTTP methods" }
       ], 
-      fun req e ->
-        Response.InternalServerError e
+      fun req e -> Response.InternalServerError e
 ```
 
 In Global.asax, use the ablove WebApiConfig module instead of the original WebApiConfig class.
