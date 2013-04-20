@@ -115,7 +115,7 @@ module WebApiConfig =
       fun req e -> Response.InternalServerError e
 ```
 
-In Global.asax, use the ablove WebApiConfig module instead of the original WebApiConfig class.
+In Global.asax, use the above WebApiConfig module instead of the original WebApiConfig class.
 
 ```csharp
 WebApiConfig.Register(GlobalConfiguration.Configuration);
