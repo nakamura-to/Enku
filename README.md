@@ -118,6 +118,10 @@ In Global.asax, use the ablove WebApiConfig module instead of the original WebAp
 WebApiConfig.Register(GlobalConfiguration.Configuration);
 ```
 
+## Resources
+
+- [Web API in a F#-way](http://www.rvl.io/nakamura_to/web-api-in-a-fsharp-way)
+
 ## License
 
 Apache License, Version 2.0
