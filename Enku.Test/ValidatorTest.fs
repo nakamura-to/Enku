@@ -7,6 +7,7 @@ open System.Web.Http
 open System.Web.Http.Hosting
 open System.Text.RegularExpressions
 open Enku
+open Enku.Validation
 
 module ValidatorTest = 
 

@@ -70,15 +70,15 @@ module Request =
     let errors = Seq.toList errors
     return
       match errors with
-      | [] -> Ok result
-      | head :: tail -> Error (head, tail) }
+      | [] -> Validation.Result.Ok result
+      | head :: tail -> Validation.Result.Error (head, tail) }
 
   let asyncTryReadAsForm req = async {
     let! result = asyncTryReadAs<FormDataCollection> req
     return
       match result with
-      | Ok form -> Ok <| Helper.toKeyValuesMap form
-      | Error (head, tail) -> Error (head, tail) }
+      | Validation.Ok form -> Validation.Ok <| Helper.toKeyValuesMap form
+      | Validation.Error (head, tail) -> Validation.Error (head, tail) }
 
   let getQueryString key (Request reqMessage) = 
     reqMessage.GetQueryNameValuePairs()

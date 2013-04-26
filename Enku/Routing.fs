@@ -22,8 +22,6 @@ open System.Web.Http
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Routing =
 
-  exception Exit of Response
-
   let private regex = Regex(@"{\?(?<optional>[^}]*)}")
 
   let parsePath path =
@@ -52,12 +50,7 @@ module Routing =
               | _ -> async { return Response.NotFound "" }
             return builder reqMessage
           with e ->
-            let (Response builder) = 
-              match e with 
-              | Exit builder ->
-                builder
-              | _ ->
-                errorHandler req e
+            let (Response builder) = errorHandler req e
             return builder reqMessage }
         Async.StartAsTask(computation, cancellationToken = token) }
 
@@ -78,9 +71,6 @@ module Routing =
         defaults = defaults,
         constraints = null,
         handler = handler) |> ignore)
-
-  let exit response =
-    raise <| Exit response
 
   let addGlobalHandler (config: HttpConfiguration) handler =
     config.MessageHandlers.Add <|

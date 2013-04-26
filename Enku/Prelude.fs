@@ -19,8 +19,6 @@ open System.Net
 open System.Net.Http
 open System.Net.Http.Formatting
 open System.Net.Http.Headers
-open Microsoft.FSharp.Quotations
-open Microsoft.FSharp.Quotations.Patterns
 
 [<AutoOpen>]
 module Prelude = 
@@ -37,50 +35,6 @@ module Prelude =
         match values with
         | [] -> None
         | h :: _ -> Some h
-
-  type ValidationResult<'ok, 'error> =
-    | Ok of 'ok
-    | Error of 'error
-
-  type Validator<'value, 'result> = Validator of (string -> 'value option -> ValidationResult<'result option, string>) with
-    static member (<+>) (Validator(x), Validator(y)) = Validator(fun name value ->
-      match x name value with
-      | Ok ret -> y name ret
-      | Error msg -> Error msg)
-
-  type ValidationContext() =
-    let errors = ResizeArray<string>()
-    member this.Errors = Seq.toList errors
-    member private this.Run((Validator validator), name, value) =
-      match validator name value with
-      | Ok ret -> ret
-      | Error msg ->
-        errors.Add(msg)
-        None
-    member this.Eval(value, name, validator) =
-      this.Run(validator, name, value)
-    member this.Eval(map: Map<_, _>, key, validator) =
-      let value = Map.tryFind key map
-      this.Run(validator, key, value)
-    member this.Eval(expr: Expr<'T>, validator) =
-      match expr with
-      | PropertyGet(receiver, propInfo, _) ->
-        match receiver with
-        | Some receiver ->
-          match receiver with
-          | Value(receiver, _) ->
-            let name = propInfo.Name
-            let value = propInfo.GetValue(receiver, null) :?> 'T
-            this.Run(validator, name, Some value)
-          |_ -> 
-            errors.Add(sprintf "%A is not a Value expression" receiver)
-            None
-        |_ -> 
-          errors.Add(sprintf "%A is not an instance property" propInfo.Name)
-          None
-      | _ -> 
-        errors.Add(sprintf "%A is not a property" expr)
-        None
 
   type Request = Request of HttpRequestMessage
 
