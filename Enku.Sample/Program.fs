@@ -57,7 +57,7 @@ let log2 = Around(fun req action -> async {
   finally
     printfn "AFTER2" })
 
-route "path" <| fun _ ->
+route "path" <| (Advice.router [log] <| fun _ ->
   [
     // normal
     "01/{?id}", fun req ->
@@ -85,17 +85,16 @@ route "path" <| fun _ ->
       ]
 
     "05", fun _ -> 
-      [ 
+      [
         post, fun req -> async {
           let! content = Request.asyncReadAsString req
           return Response.Ok content }
       ]
 
-    "06", fun _ -> 
+    "06", Advice.controller [log] <| fun _ -> 
       let raiseFirst = function  [] -> () | h :: _ -> failwith h
-      Advice.around [log] <|
-      [ 
-        post, fun req ->  async {
+      [
+        post, fun req -> async {
           printfn "MAIN: POST path/06"
           let! form = Request.asyncReadAsForm req
           let vc = ValidationContext()
@@ -106,8 +105,7 @@ route "path" <| fun _ ->
           return Response.Ok (aaa.Value + bbb.Value + ccc.Value) }
       ]
 
-    "07/{?id}", fun _ -> 
-      Advice.around [log ; log2] <|
+    "07/{?id}", Advice.controller [log ; log2] <| fun _ -> 
       [ 
         post, fun req -> async {
           let id = Request.getRouteValue "id" req
@@ -144,7 +142,7 @@ route "path" <| fun _ ->
             return Response.Ok person.Name }
       ]
   ], 
-  fun req e -> Response.InternalServerError e
+  fun req e -> Response.InternalServerError e)
 
 type ClinetHandler() =
   inherit HttpClientHandler()

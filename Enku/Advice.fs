@@ -17,11 +17,28 @@ open System.Net.Http
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Advice =
 
-  let around interceptors actions =
-    let chain (Around x) (Around y) = Around(fun req body ->
-      x req (fun req ->
-        y req body))
+  let private chain (Around x) (Around y) = Around(fun req body ->
+    x req (fun req ->
+      y req body))
+
+  let action interceptors (action: Action) =
     let (Around f) = interceptors |> List.reduce chain
-    actions |> List.map (fun (predicate: Constraint, action: Action) ->
-      let wrapped : Action = fun req -> f req action
-      predicate, wrapped)
+    let wrapped : Action = fun req -> f req action
+    wrapped
+
+  let controller interceptors (controller: Controller) =
+    let wrapped : Controller = fun req -> 
+      controller req
+      |> List.map (fun (constraint_, a) ->
+        constraint_, action interceptors a)
+    wrapped
+
+  let router interceptors (router: Router) =
+    let wrapped : Router = fun () ->
+      let controllers, errorHandler = router ()
+      let controllers =
+        controllers
+        |> List.map (fun (path, c) ->
+          path, controller interceptors c)
+      controllers, errorHandler
+    wrapped
