@@ -43,114 +43,108 @@ let route = Routing.route config
 
 type Person = { Name: string; Age: int }
 
-let log = Around(fun req body -> async {
+let log = Around(fun req action -> async {
   printfn "BEFORE1"
   try
-    return! body req
+    return! action req
   finally
     printfn "AFTER1" })
 
-let log2 = Around(fun req body -> async {
+let log2 = Around(fun req action -> async {
   printfn "BEFORE2"
   try
-    return! body req
+    return! action req
   finally
     printfn "AFTER2" })
 
-let handleError = fun req e ->
-  Response.InternalServerError e
+route "path" <| fun _ ->
+  [
+    // normal
+    "01/{?id}", fun req ->
+      [
+        post, fun req -> async {
+          return Response.Ok {Name = "post"; Age = 20} }
 
-// normal
-route "path/01/{?id}" <| fun _ ->
-  [ 
-    post, fun req -> async {
-      return Response.Ok {Name = "post"; Age = 20} }
+        get, fun req -> async {
+          return Response.Ok {Name = "get"; Age = 20} }
+      ]
 
-    get, fun req -> async {
-      return Response.Ok {Name = "get"; Age = 20} } 
+    // action alternatives
+    "02", fun _ -> 
+      [ 
+        get <|> post, fun req -> async {
+          return Response.Ok {Name = "foo"; Age = 20} } 
+      ]
+
+    //
+    "04", fun _ -> 
+      [
+        get, fun req -> async {
+          printfn "MAIN: GET path/04"
+          return Response.Ok {Name = "foo"; Age = 20} } 
+      ]
+
+    "05", fun _ -> 
+      [ 
+        post, fun req -> async {
+          let! content = Request.asyncReadAsString req
+          return Response.Ok content }
+      ]
+
+    "06", fun _ -> 
+      let raiseFirst = function  [] -> () | h :: _ -> failwith h
+      Advice.around [log] <|
+      [ 
+        post, fun req ->  async {
+          printfn "MAIN: POST path/06"
+          let! form = Request.asyncReadAsForm req
+          let vc = ValidationContext()
+          let aaa = vc.Eval(form, "aaa", V.head <+> V.required)
+          let bbb = vc.Eval(form, "bbb", V.head <+> V.required)
+          let ccc = vc.Eval(form, "ccc", V.head <+> V.required)
+          vc.Errors |> raiseFirst
+          return Response.Ok (aaa.Value + bbb.Value + ccc.Value) }
+      ]
+
+    "07/{?id}", fun _ -> 
+      Advice.around [log ; log2] <|
+      [ 
+        post, fun req -> async {
+          let id = Request.getRouteValue "id" req
+          let id = match id with Some v -> v | _ -> ""
+          printfn "MAIN: POST path/07, %s" id
+          return Response.Ok {Name = "post"; Age = 20} }
+
+        get, fun req -> async {
+          let id = Request.getRouteValue "id" req
+          let id = match id with Some v -> v | _ -> ""
+          printfn "MAIN: GET path/07, id=%s" id
+          return 
+            Response.Ok {Name = "get"; Age = 20}
+            |> Response.appendHeaders 
+               [ ResponseHeader.Age <| TimeSpan(12, 13, 14)
+                 ResponseHeader.ContentType <| Headers.MediaTypeHeaderValue("text/plain")] }
+      ]
+
+    "08", fun _ -> 
+      [ 
+        post, fun req -> 
+          let validate = function
+            | Ok person ->
+              let vc = ValidationContext()
+              let name = vc.Eval(<@ person.Name @>, V.required)
+              let age = vc.Eval(<@ person.Age @>, V.range 15 20 <+> V.required)
+              match vc.Errors with
+              | [] -> { Name = name.Value; Age = age.Value }
+              | h :: _ ->  Response.BadRequest(h) |> Routing.exit
+            | Error (head, _) -> Response.BadRequest head |> Routing.exit
+          async {
+            let! person = Request.asyncTryReadAs<Person> req
+            let person = validate person
+            return Response.Ok person.Name }
+      ]
   ], 
   fun req e -> Response.InternalServerError e
-
-// action alternatives
-route "path/02" <| fun _ -> 
-  [ 
-    get <|> post, fun req -> async {
-      return Response.Ok {Name = "foo"; Age = 20} } 
-  ],
-  handleError
-
-// do something around an operation
-route "path/04" <| fun _ -> 
-  [ 
-    get, fun req -> async {
-      printfn "MAIN: GET path/04"
-      return Response.Ok {Name = "foo"; Age = 20} } 
-  ],
-  handleError
-
-route "path/05" <| fun _ -> 
-  [ 
-    post, fun req -> async {
-      let! content = Request.asyncReadAsString req
-      return Response.Ok content }
-  ],
-  handleError
-
-route "path/06" <| fun _ -> 
-  let raiseFirst = function  [] -> () | h :: _ -> failwith h
-  Advice.around [log] <|
-  [ 
-    post, fun req ->  async {
-      printfn "MAIN: POST path/06"
-      let! form = Request.asyncReadAsForm req
-      let vc = ValidationContext()
-      let aaa = vc.Eval(form, "aaa", V.head <+> V.required)
-      let bbb = vc.Eval(form, "bbb", V.head <+> V.required)
-      let ccc = vc.Eval(form, "ccc", V.head <+> V.required)
-      vc.Errors |> raiseFirst
-      return Response.Ok (aaa.Value + bbb.Value + ccc.Value) }
-  ],
-  handleError
-
-route "path/07/{?id}" <| fun _ -> 
-  Advice.around [log ; log2] <|
-  [ 
-    post, fun req -> async {
-      let id = Request.getRouteValue "id" req
-      let id = match id with Some v -> v | _ -> ""
-      printfn "MAIN: POST path/07, %s" id
-      return Response.Ok {Name = "post"; Age = 20} }
-
-    get, fun req -> async {
-      let id = Request.getRouteValue "id" req
-      let id = match id with Some v -> v | _ -> ""
-      printfn "MAIN: GET path/07, id=%s" id
-      return 
-        Response.Ok {Name = "get"; Age = 20}
-        |> Response.appendHeaders 
-           [ ResponseHeader.Age <| TimeSpan(12, 13, 14)
-             ResponseHeader.ContentType <| Headers.MediaTypeHeaderValue("text/plain")] }
-  ],
-  handleError
-
-route "path/08" <| fun _ -> 
-  [ 
-    post, fun req -> 
-      let validate = function
-        | Ok person ->
-          let vc = ValidationContext()
-          let name = vc.Eval(<@ person.Name @>, V.required)
-          let age = vc.Eval(<@ person.Age @>, V.range 15 20 <+> V.required)
-          match vc.Errors with
-          | [] -> { Name = name.Value; Age = age.Value }
-          | h :: _ ->  Response.BadRequest(h) |> Routing.exit
-        | Error (head, _) -> Response.BadRequest head |> Routing.exit
-      async {
-        let! person = Request.asyncTryReadAs<Person> req
-        let person = validate person
-        return Response.Ok person.Name }
-  ],
-  handleError
 
 type ClinetHandler() =
   inherit HttpClientHandler()

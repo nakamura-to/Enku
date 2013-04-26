@@ -36,11 +36,11 @@ module Routing =
       "{" + key + "}")
     path, defaults
 
-  let makeHandler controller = 
+  let makeHandler controller errorHandler = 
     { new HttpMessageHandler() with
       override this.SendAsync(reqMessage, token) = 
         let req = Request reqMessage
-        let actions, (errHandler: ErrorHandler) = controller req
+        let actions = controller req
         let computation = async {
           try
             let! (Response builder) =
@@ -57,19 +57,27 @@ module Routing =
               | Exit builder ->
                 builder
               | _ ->
-                errHandler req e
+                errorHandler req e
             return builder reqMessage }
         Async.StartAsTask(computation, cancellationToken = token) }
 
-  let route (config: HttpConfiguration) path controller =
-    let path, defaults = parsePath path
-    let handler = makeHandler controller
-    config.Routes.MapHttpRoute(
-      name = path,
-      routeTemplate = path,
-      defaults = defaults,
-      constraints = null,
-      handler = handler) |> ignore
+  let route (config: HttpConfiguration) (basePath: string) (router: Router) =
+    let (controllers: (string * Controller) list), (errorHandler: ErrorHandler) = router()
+    controllers
+    |> List.iter (fun (path, controller) ->
+      let path =
+        if basePath.EndsWith("/") then
+          basePath + path
+        else
+          basePath + "/" + path
+      let path, defaults = parsePath path
+      let handler = makeHandler controller errorHandler
+      config.Routes.MapHttpRoute(
+        name = path,
+        routeTemplate = path,
+        defaults = defaults,
+        constraints = null,
+        handler = handler) |> ignore)
 
   let exit response =
     raise <| Exit response
