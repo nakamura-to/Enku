@@ -43,19 +43,19 @@ let route = Routing.route config
 
 type Person = { Name: string; Age: int }
 
-let log = Around(fun req action -> async {
+let log req inner = async {
   printfn "BEFORE1"
   try
-    return! action req
+    return! inner req
   finally
-    printfn "AFTER1" })
+    printfn "AFTER1" }
 
-let log2 = Around(fun req action -> async {
+let log2 req inner = async {
   printfn "BEFORE2"
   try
-    return! action req
+    return! inner req
   finally
-    printfn "AFTER2" })
+    printfn "AFTER2" }
 
 route "path" <| (Advice.router [log] <| fun _ ->
   [
@@ -101,8 +101,9 @@ route "path" <| (Advice.router [log] <| fun _ ->
           let aaa = vc.Eval(form, "aaa", V.head <+> V.required)
           let bbb = vc.Eval(form, "bbb", V.head <+> V.required)
           let ccc = vc.Eval(form, "ccc", V.head <+> V.required)
-          vc.Errors |> raiseFirst
-          return Response.Ok (aaa.Value + bbb.Value + ccc.Value) }
+          match vc.Errors with
+          | [] -> return Response.Ok (aaa.Value + bbb.Value + ccc.Value)
+          | h :: _ -> return Response.BadRequest h }
       ]
 
     "07/{?id}", Advice.controller [log ; log2] <| fun _ -> 

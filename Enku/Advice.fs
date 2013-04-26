@@ -17,28 +17,33 @@ open System.Net.Http
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Advice =
 
-  let private chain (Around x) (Around y) = Around(fun req body ->
-    x req (fun req ->
-      y req body))
+  let private chain x y = fun req inner ->
+    x req (fun req -> y req inner)
 
-  let action interceptors (action: Action) =
-    let (Around f) = interceptors |> List.reduce chain
-    let wrapped : Action = fun req -> f req action
-    wrapped
+  let action (interceptors: Around list) (action: Action) =
+    if List.isEmpty interceptors then
+      action
+    else
+      let wrap inner : Action = fun req ->
+        let f = List.reduce chain interceptors
+        f req action
+      wrap action
 
-  let controller interceptors (controller: Controller) =
-    let wrapped : Controller = fun req -> 
-      controller req
-      |> List.map (fun (constraint_, a) ->
-        constraint_, action interceptors a)
-    wrapped
+  let controller (interceptors: Around list) (controller: Controller) =
+    if List.isEmpty interceptors then
+      controller
+    else
+      let wrap inner : Controller = fun req -> 
+        let actionDefs = controller req
+        List.map (fun (constraint_, a) -> constraint_, action interceptors a) actionDefs
+      wrap controller
 
-  let router interceptors (router: Router) =
-    let wrapped : Router = fun () ->
-      let controllers, errorHandler = router ()
-      let controllers =
-        controllers
-        |> List.map (fun (path, c) ->
-          path, controller interceptors c)
-      controllers, errorHandler
-    wrapped
+  let router (interceptors: Around list) (router: Router) =
+    if List.isEmpty interceptors then
+      router
+    else
+      let wrap inner : Router = fun () ->
+        let controllerDefs, errorHandler = router ()
+        let controllerDefs = List.map (fun (path, c) -> path, controller interceptors c) controllerDefs
+        controllerDefs, errorHandler
+      wrap router

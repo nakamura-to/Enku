@@ -92,11 +92,15 @@ module Prelude =
 
   type Action = (Request -> Async<Response>)
 
-  type Controller = (Request -> (Constraint * Action) list)
+  type ActionDef = Constraint * Action
 
-  type Router = (unit -> (string * Controller) list * ErrorHandler)
+  type Controller = (Request -> ActionDef list)
 
-  type Around = Around of (Request -> Action -> Async<Response>)
+  type ControllerDef = string * Controller
+
+  type Router = (unit -> ControllerDef list * ErrorHandler)
+
+  type Around = (Request -> Action -> Async<Response>)
 
   type FormatError(message: string, innerException: exn) =
     inherit Exception(message, innerException)
