@@ -38,7 +38,7 @@ module Routing =
 
   let makeHandler controller = 
     { new HttpMessageHandler() with
-      override this.SendAsync(reqMessage, cancellationToken) = 
+      override this.SendAsync(reqMessage, token) = 
         let req = Request reqMessage
         let actions, (errHandler: ErrorHandler) = controller req
         let computation = async {
@@ -59,7 +59,7 @@ module Routing =
               | _ ->
                 errHandler req e
             return builder reqMessage }
-        Async.StartAsTask(computation, cancellationToken = cancellationToken) }
+        Async.StartAsTask(computation, cancellationToken = token) }
 
   let route (config: HttpConfiguration) path controller =
     let path, defaults = parsePath path
@@ -73,3 +73,11 @@ module Routing =
 
   let exit response =
     raise <| Exit response
+
+  let addGlobalHandler (config: HttpConfiguration) handler =
+    config.MessageHandlers.Add <|
+      { new DelegatingHandler() with
+        override this.SendAsync(request, token) =
+          let response = Async.AwaitTask <| base.SendAsync(request, token)
+          let computation = handler request response
+          Async.StartAsTask(computation, cancellationToken = token) }
