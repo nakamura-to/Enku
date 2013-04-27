@@ -72,23 +72,23 @@ module Request =
     | Result.Ok form -> return Result.Ok <| Helper.toKeyValuesMap form
     | Result.Error (head, tail) -> return Result.Error (head, tail) }
 
-  let getQueryString key (Request req) = 
+  let queryString key (Request req) = 
     req.GetQueryNameValuePairs()
     |> Seq.tryPick (fun (KeyValue(k, v)) -> 
       if k = key then Some v 
       else None)
 
-  let getQueryStringMap (Request req) = 
+  let queryStringMap (Request req) = 
     req.GetQueryNameValuePairs()
     |> Seq.distinctBy (fun (KeyValue(k, _)) -> k)
     |> Seq.map (fun (KeyValue(k, v)) -> k, v)
     |> Map.ofSeq
 
-  let getQueryStringsAll (Request req) = 
+  let queryStringsAll (Request req) = 
     req.GetQueryNameValuePairs()
     |> Helper.toKeyValuesMap
 
-  let getRouteValue key (Request req) =
+  let routeValue key (Request req) =
     let routeData = req.GetRouteData()
     match routeData.Values.TryGetValue(key) with
     | true, v ->
@@ -97,7 +97,7 @@ module Request =
     | _ -> 
       None
 
-  let getRouteValueMap (Request req) =
+  let routeValueMap (Request req) =
     let routeData = req.GetRouteData()
     routeData.Values
     |> Seq.choose (fun (KeyValue(k, v)) -> 
@@ -105,11 +105,10 @@ module Request =
       else Some (k, string v))
     |> Map.ofSeq
 
-  let getMethod (Request req) =
-    req.Method
+  let meth (Request req) = req.Method
 
-  let getRequestUri (Request req) =
-    req.RequestUri
+  let requestUri (Request req) = req.RequestUri
 
-  let getVersion (Request req) =
-    req.Version
+  let version (Request req) = req.Version
+
+  let headers (Request req) = RequestHeaders req

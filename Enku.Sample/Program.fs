@@ -80,8 +80,9 @@ route "path/" <| (Advice.router [log] <| fun _ ->
     "04", fun _ -> 
       [
         get, fun req -> async {
-          printfn "MAIN: GET path/04"
-          return Response.Ok {Name = "foo"; Age = 20} } 
+          let host = req |> Request.headers |> RequestHeaders.Host
+          let host = match host with Some v -> v | _ -> ""
+          return Response.Ok host } 
       ]
 
     "05", fun _ -> 
@@ -112,20 +113,20 @@ route "path/" <| (Advice.router [log] <| fun _ ->
     "07/{?id}", Advice.controller [log ; log2] <| fun _ -> 
       [ 
         post, fun req -> async {
-          let id = Request.getRouteValue "id" req
+          let id = Request.routeValue "id" req
           let id = match id with Some v -> v | _ -> ""
           printfn "MAIN: POST path/07, %s" id
           return Response.Ok {Name = "post"; Age = 20} }
 
         get, fun req -> async {
-          let id = Request.getRouteValue "id" req
+          let id = Request.routeValue "id" req
           let id = match id with Some v -> v | _ -> ""
           printfn "MAIN: GET path/07, id=%s" id
           return 
             Response.Ok {Name = "get"; Age = 20}
             |> Response.headers 
-               [ ResponseHeader.Age <== TimeSpan(12, 13, 14)
-                 ResponseHeader.ContentType <== MediaTypeHeaderValue("text/plain")] }
+               [ ResponseHeaders.Age <== TimeSpan(12, 13, 14)
+                 ResponseHeaders.ContentType <| Header.Clear ] }
       ]
 
     "08", fun _ -> 

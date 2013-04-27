@@ -20,6 +20,8 @@ module Prelude =
 
   type Request = Request of HttpRequestMessage
 
+  type RequestHeaders = RequestHeaders of HttpRequestMessage
+
   type Response = Response of (HttpRequestMessage -> HttpResponseMessage)
 
   type ErrorHandler = (Request -> exn -> Response)

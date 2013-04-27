@@ -18,7 +18,7 @@ open System.Net.Http.Headers
 open System.Net.Http.Formatting
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module ResponseHeader =
+module ResponseHeaders =
 
   open Header
 
@@ -203,3 +203,12 @@ module ResponseHeader =
       match manipulation with
       | Add value -> res.Content.Headers.LastModified  <- Nullable(value)
       | _ -> res.Content.Headers.LastModified  <- Nullable()
+
+  let ContentType2 value = fun (res: HttpResponseMessage) ->
+    if res.Content <> null then
+      res.Content.Headers.ContentType <- value
+
+  module ContentType2 =
+    let clear = fun (res: HttpResponseMessage) ->
+      if res.Content <> null then
+        res.Content.Headers.ContentType <- null

@@ -20,28 +20,28 @@ open System.Net.Http.Headers
 module Constraint = 
 
   let get : Constraint = fun req ->
-    Request.getMethod req = HttpMethod.Get
+    Request.meth req = HttpMethod.Get
 
   let post : Constraint = fun req ->
-    Request.getMethod req = HttpMethod.Post
+    Request.meth req = HttpMethod.Post
 
   let put : Constraint = fun req ->
-    Request.getMethod req = HttpMethod.Put
+    Request.meth req = HttpMethod.Put
 
   let delete : Constraint = fun req ->
-    Request.getMethod req = HttpMethod.Delete
+    Request.meth req = HttpMethod.Delete
 
   let head : Constraint = fun req ->
-    Request.getMethod req = HttpMethod.Head
+    Request.meth req = HttpMethod.Head
 
   let options : Constraint = fun req ->
-    Request.getMethod req = HttpMethod.Options
+    Request.meth req = HttpMethod.Options
 
   let trace : Constraint = fun req ->
-    Request.getMethod req = HttpMethod.Trace
+    Request.meth req = HttpMethod.Trace
 
   let patch : Constraint = fun req ->
-    Request.getMethod req =  HttpMethod "PATCH"
+    Request.meth req =  HttpMethod "PATCH"
 
   let any : Constraint = fun _ -> true
 
