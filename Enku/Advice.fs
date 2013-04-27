@@ -17,15 +17,16 @@ open System.Net.Http
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Advice =
 
-  let private chain x y = fun req inner ->
-    x req (fun req -> y req inner)
+  module Helper =
+    let chain x y = fun req inner ->
+      x req (fun req -> y req inner)
 
   let action (interceptors: Around list) (action: Action) =
     if List.isEmpty interceptors then
       action
     else
       let wrap inner : Action = fun req ->
-        let f = List.reduce chain interceptors
+        let f = List.reduce Helper.chain interceptors
         f req action
       wrap action
 

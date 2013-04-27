@@ -13,28 +13,37 @@
 namespace Enku
 
 open System.Net.Http
+open System.Net.Http.Headers
 
 [<AutoOpen>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Constraint = 
 
-  let get : Constraint = fun (Request req) -> req.Method = HttpMethod.Get
+  let get : Constraint = fun req ->
+    Request.getMethod req = HttpMethod.Get
 
-  let post : Constraint = fun (Request req) -> req.Method = HttpMethod.Post
+  let post : Constraint = fun req ->
+    Request.getMethod req = HttpMethod.Post
 
-  let put : Constraint = fun (Request req) -> req.Method = HttpMethod.Put
+  let put : Constraint = fun req ->
+    Request.getMethod req = HttpMethod.Put
 
-  let delete : Constraint = fun (Request req) -> req.Method = HttpMethod.Delete
+  let delete : Constraint = fun req ->
+    Request.getMethod req = HttpMethod.Delete
 
-  let head : Constraint = fun (Request req) -> req.Method = HttpMethod.Head
+  let head : Constraint = fun req ->
+    Request.getMethod req = HttpMethod.Head
 
-  let options : Constraint = fun (Request req) -> req.Method = HttpMethod.Options
+  let options : Constraint = fun req ->
+    Request.getMethod req = HttpMethod.Options
 
-  let trace : Constraint = fun (Request req) -> req.Method = HttpMethod.Trace
+  let trace : Constraint = fun req ->
+    Request.getMethod req = HttpMethod.Trace
 
-  let patch : Constraint = fun (Request req) -> req.Method =  HttpMethod "PATCH"
+  let patch : Constraint = fun req ->
+    Request.getMethod req =  HttpMethod "PATCH"
 
-  let any : Constraint = (fun _ -> true)
+  let any : Constraint = fun _ -> true
 
 [<AutoOpen>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
