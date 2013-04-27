@@ -57,7 +57,7 @@ let log2 req inner = async {
   finally
     printfn "AFTER2" }
 
-route "path" <| (Advice.router [log] <| fun _ ->
+route "path/" <| (Advice.router [log] <| fun _ ->
   [
     // normal
     "01/{?id}", fun req ->
@@ -96,13 +96,17 @@ route "path" <| (Advice.router [log] <| fun _ ->
         post, fun req -> async {
           printfn "MAIN: POST path/06"
           let! form = Request.asyncReadAsForm req
-          let vc = Validation.Context()
-          let aaa = vc.Eval(form, "aaa", V.head <+> V.required)
-          let bbb = vc.Eval(form, "bbb", V.head <+> V.required)
-          let ccc = vc.Eval(form, "ccc", V.head <+> V.required)
-          match vc.Errors with
-          | [] -> return Response.Ok (aaa.Value + bbb.Value + ccc.Value)
-          | h :: _ -> return Response.BadRequest h }
+          match form with
+          | Result.Ok form ->
+            let vc = Validation.Context()
+            let aaa = vc.Eval(form, "aaa", V.head <+> V.required)
+            let bbb = vc.Eval(form, "bbb", V.head <+> V.required)
+            let ccc = vc.Eval(form, "ccc", V.head <+> V.required)
+            match vc.Errors with
+            | [] -> return Response.Ok (aaa.Value + bbb.Value + ccc.Value)
+            | h :: _ -> return Response.BadRequest h
+          | Result.Error (h, _) ->
+            return Response.BadRequest h }
       ]
 
     "07/{?id}", Advice.controller [log ; log2] <| fun _ -> 
@@ -128,19 +132,19 @@ route "path" <| (Advice.router [log] <| fun _ ->
       [ 
         post, fun req -> 
           let validate = function
-            | Validation.Ok person ->
+            | Result.Ok person ->
               let vc = Validation.Context()
               let name = vc.Eval(<@ person.Name @>, V.required)
               let age = vc.Eval(<@ person.Age @>, V.range 15 20 <+> V.required)
               match vc.Errors with
-              | [] -> Validation.Ok <| { Name = name.Value; Age = age.Value }
-              | h :: _ -> Validation.Error <| Response.BadRequest(h)
-            | Validation.Error (h, _) -> Validation.Error <| Response.BadRequest h
+              | [] -> Result.Ok <| { Name = name.Value; Age = age.Value }
+              | h :: _ -> Result.Error <| Response.BadRequest(h)
+            | Result.Error (h, _) -> Result.Error <| Response.BadRequest h
           async {
-            let! person = Request.asyncTryReadAs<Person> req
+            let! person = Request.asyncReadAs<Person> req
             match validate person with
-            | Validation.Ok person -> return Response.Ok person.Name
-            | Validation.Error error -> return error }
+            | Result.Ok person -> return Response.Ok person.Name
+            | Result.Error error -> return error }
       ]
   ], 
   fun req e -> Response.InternalServerError e)

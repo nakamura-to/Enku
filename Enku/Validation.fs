@@ -25,23 +25,19 @@ open Microsoft.FSharp.Quotations.Patterns
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Validation =
 
-  type Result<'ok, 'error> =
-    | Ok of 'ok
-    | Error of 'error
-
-  type Validator<'value, 'result> = Validator of (string -> 'value option -> Result<'result option, string>) with
+  type Validator<'value, 'result> = Validator of (string -> 'value option -> Result.T<'result option, string>) with
     static member (<+>) (Validator(x), Validator(y)) = Validator(fun name value ->
       match x name value with
-      | Ok ret -> y name ret
-      | Error msg -> Error msg)
+      | Result.Ok ret -> y name ret
+      | Result.Error msg -> Result.Error msg)
 
   type Context() =
     let errors = ResizeArray<string>()
     member this.Errors = Seq.toList errors
     member private this.Run((Validator validator), name, value) =
       match validator name value with
-      | Ok ret -> ret
-      | Error msg ->
+      | Result.Ok ret -> ret
+      | Result.Error msg ->
         errors.Add(msg)
         None
     member this.Eval(value, name, validator) =
@@ -82,29 +78,29 @@ module Validation =
         match values with
         | Some values ->
           match values with
-          | [] -> Error (format fmt "%s is not found." name)
-          | h :: _ -> Ok (Some h)
+          | [] -> Result.Error (format fmt "%s is not found." name)
+          | h :: _ -> Result.Ok (Some h)
         | _ ->
-          Ok None
+          Result.Ok None
 
       let int name value fmt =
         match value with
         | Some value ->
           match Int32.TryParse (string (box value)) with
-          | true, n -> Ok (Some n)
-          | _ -> Error (format fmt "%s is not a int." name)
+          | true, n -> Result.Ok (Some n)
+          | _ -> Result.Error (format fmt "%s is not a int." name)
         | _ ->
-          Ok None
+          Result.Ok None
 
       let maxlength max name value fmt =
         match value with
         | Some s ->
           if String.length s > max then
-            Error (format fmt "%s can not be greater than %d characters." name max)
+            Result.Error (format fmt "%s can not be greater than %d characters." name max)
           else
-            Ok (Some s)
+            Result.Ok (Some s)
         | _ ->
-          Ok None
+          Result.Ok None
 
       let range min max name value fmt =
         let makeMessage() =
@@ -112,27 +108,27 @@ module Validation =
         match value with
         | Some n ->
           if n < min then
-            Error (makeMessage())
+            Result.Error (makeMessage())
           elif n > max then
-            Error (makeMessage())
+            Result.Error (makeMessage())
           else
-            Ok (Some n)
+            Result.Ok (Some n)
         | _ ->
-          Ok None
+          Result.Ok None
 
       let required name value fmt =
         match value with
         | Some value -> 
-          Ok (Some value)
+          Result.Ok (Some value)
         | _ ->
-          Error (format fmt "%s is required." name)
+          Result.Error (format fmt "%s is required." name)
 
       let string _ value =
         match value with
         | Some value ->
-          Ok (Some (string (box value)))
+          Result.Ok (Some (string (box value)))
         | _ ->
-          Ok None
+          Result.Ok None
 
 
     let head = Validator(fun name values ->

@@ -45,15 +45,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Prelude.fs" />
-    <Compile Include="Validation.fs" />
+    <Compile Include="Result.fs" />
     <Compile Include="Header.fs" />
     <Compile Include="RequestHeader.fs" />
     <Compile Include="Request.fs" />
     <Compile Include="ResponseHeader.fs" />
     <Compile Include="Response.fs" />
-    <Compile Include="Action.fs" />
     <Compile Include="Advice.fs" />
     <Compile Include="Routing.fs" />
+    <Compile Include="Constraint.fs" />
+    <Compile Include="Validation.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <None Include="packages.config" />
   </ItemGroup>

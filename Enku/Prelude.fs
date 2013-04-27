@@ -12,29 +12,11 @@
 
 namespace Enku
 
-open System
-open System.Collections.Specialized
-open System.Collections.Generic
-open System.Net
 open System.Net.Http
-open System.Net.Http.Formatting
-open System.Net.Http.Headers
 
 [<AutoOpen>]
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Prelude = 
-
-  module Map =
-
-    let findHead key (map: Map<_, _ list>) =
-      Map.find key map |> List.head
-
-    let tryFindHead key (map: Map<_, _ list>) =
-      match Map.tryFind key map with
-      | None -> None
-      | Some values ->
-        match values with
-        | [] -> None
-        | h :: _ -> Some h
 
   type Request = Request of HttpRequestMessage
 
@@ -55,24 +37,3 @@ module Prelude =
   type Router = (unit -> ControllerDef list * ErrorHandler)
 
   type Around = (Request -> Action -> Async<Response>)
-
-  type FormatError(message: string, innerException: exn) =
-    inherit Exception(message, innerException)
-
-  let private isTargetMethod m = fun (Request req) -> req.Method = m
-
-  let get : Constraint = isTargetMethod HttpMethod.Get
-  let post : Constraint = isTargetMethod HttpMethod.Post
-  let put : Constraint = isTargetMethod HttpMethod.Put
-  let delete : Constraint = isTargetMethod HttpMethod.Delete
-  let head : Constraint = isTargetMethod HttpMethod.Head
-  let options : Constraint = isTargetMethod HttpMethod.Options
-  let trace : Constraint = isTargetMethod HttpMethod.Trace
-  let patch : Constraint = isTargetMethod <| HttpMethod "PATCH"
-  let any : Constraint = (fun _ -> true)
-
-  let (<|>) (x: Constraint) (y: Constraint) : Constraint = 
-    fun req -> x req || y req
-
-  let (<&>) (x: Constraint) (y: Constraint) : Constraint = 
-    fun req -> x req && y req

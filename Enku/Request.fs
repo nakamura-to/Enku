@@ -21,6 +21,9 @@ module Request =
 
   module Helper =
 
+    type FormatError(message: string, innerException: exn) =
+      inherit Exception(message, innerException)
+
     type FormatterLogger(errors: ResizeArray<exn>) =
       interface IFormatterLogger with
         member this.LogError(errorPath: string, errorMessage: string) = 
@@ -44,86 +47,69 @@ module Request =
       |> Map.ofSeq
 
 
-  let asyncReadAsString (Request reqMessage) =
-    Async.AwaitTask <| reqMessage.Content.ReadAsStringAsync()
+  let asyncReadAsString (Request req) =
+    Async.AwaitTask <| req.Content.ReadAsStringAsync()
 
-  let asyncReadAsStream (Request reqMessage) =
-    Async.AwaitTask <| reqMessage.Content.ReadAsStreamAsync()
+  let asyncReadAsStream (Request req) =
+    Async.AwaitTask <| req.Content.ReadAsStreamAsync()
 
-  let asyncReadAsBytes (Request reqMessage) =
-    Async.AwaitTask <| reqMessage.Content.ReadAsByteArrayAsync()
+  let asyncReadAsBytes (Request req) =
+    Async.AwaitTask <| req.Content.ReadAsByteArrayAsync()
 
-  let asyncReadAs<'T> (Request reqMessage) = async {
-    let formatters = reqMessage.GetConfiguration().Formatters
-    let! result = Async.AwaitTask <| reqMessage.Content.ReadAsAsync<'T>(formatters) 
-    return result }
-
-  let asyncReadAsForm req = async {
-    let! form = asyncReadAs<FormDataCollection> req
-    return Helper.toKeyValuesMap form }
-
-  let asyncTryReadAs<'T> (Request reqMessage) = async {
-    let formatters = reqMessage.GetConfiguration().Formatters
+  let asyncReadAs<'T> (Request req) = async {
+    let formatters = req.GetConfiguration().Formatters
     let errors = ResizeArray()
     let logger = Helper.FormatterLogger(errors)
-    let! result = Async.AwaitTask <| reqMessage.Content.ReadAsAsync<'T>(formatters, logger)
+    let! result = Async.AwaitTask <| req.Content.ReadAsAsync<'T>(formatters, logger)
     let errors = Seq.toList errors
-    return
-      match errors with
-      | [] -> Validation.Result.Ok result
-      | head :: tail -> Validation.Result.Error (head, tail) }
+    match errors with
+    | [] -> return Result.Ok result
+    | head :: tail -> return Result.Error (head, tail) }
 
-  let asyncTryReadAsForm req = async {
-    let! result = asyncTryReadAs<FormDataCollection> req
-    return
-      match result with
-      | Validation.Ok form -> Validation.Ok <| Helper.toKeyValuesMap form
-      | Validation.Error (head, tail) -> Validation.Error (head, tail) }
+  let asyncReadAsForm req = async {
+    let! result = asyncReadAs<FormDataCollection> req
+    match result with
+    | Result.Ok form -> return Result.Ok <| Helper.toKeyValuesMap form
+    | Result.Error (head, tail) -> return Result.Error (head, tail) }
 
-  let getQueryString key (Request reqMessage) = 
-    reqMessage.GetQueryNameValuePairs()
+  let getQueryString key (Request req) = 
+    req.GetQueryNameValuePairs()
     |> Seq.tryPick (fun (KeyValue(k, v)) -> 
-      if k = key then 
-        Some v 
-      else 
-        None)
+      if k = key then Some v 
+      else None)
 
-  let getQueryStringMap (Request reqMessage) = 
-    reqMessage.GetQueryNameValuePairs()
+  let getQueryStringMap (Request req) = 
+    req.GetQueryNameValuePairs()
     |> Seq.distinctBy (fun (KeyValue(k, _)) -> k)
     |> Seq.map (fun (KeyValue(k, v)) -> k, v)
     |> Map.ofSeq
 
-  let getQueryStringsAll (Request reqMessage) = 
-    reqMessage.GetQueryNameValuePairs()
+  let getQueryStringsAll (Request req) = 
+    req.GetQueryNameValuePairs()
     |> Helper.toKeyValuesMap
 
-  let getRouteValue key (Request reqMessage) =
-    let routeData = reqMessage.GetRouteData()
+  let getRouteValue key (Request req) =
+    let routeData = req.GetRouteData()
     match routeData.Values.TryGetValue(key) with
     | true, v ->
-      if v = null then 
-        None 
-      else 
-        Some <| string v
+      if v = null then None 
+      else Some <| string v
     | _ -> 
       None
 
-  let getRouteValueMap (Request reqMessage) =
-    let routeData = reqMessage.GetRouteData()
+  let getRouteValueMap (Request req) =
+    let routeData = req.GetRouteData()
     routeData.Values
     |> Seq.choose (fun (KeyValue(k, v)) -> 
-      if v = null then 
-        None 
-      else 
-        Some (k, string v))
+      if v = null then None 
+      else Some (k, string v))
     |> Map.ofSeq
 
-  let getMethod (Request reqMessage) =
-    reqMessage.Method
+  let getMethod (Request req) =
+    req.Method
 
-  let getRequestUri (Request reqMessage) =
-    reqMessage.RequestUri
+  let getRequestUri (Request req) =
+    req.RequestUri
 
-  let getVersion (Request reqMessage) =
-    reqMessage.Version
+  let getVersion (Request req) =
+    req.Version

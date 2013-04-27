@@ -12,14 +12,9 @@
 
 namespace Enku
 
-open System.Net.Http
-
-[<RequireQualifiedAccess>]
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module Action = 
+module Result =
 
-  let run req (action: Action) (predicate : Constraint) = 
-    if predicate req then
-      Some <| action req
-    else
-      None
+  type T<'ok, 'error> =
+    | Ok of 'ok
+    | Error of 'error
