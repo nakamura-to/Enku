@@ -92,7 +92,6 @@ route "path" <| (Advice.router [log] <| fun _ ->
       ]
 
     "06", Advice.controller [log] <| fun _ -> 
-      let raiseFirst = function  [] -> () | h :: _ -> failwith h
       [
         post, fun req -> async {
           printfn "MAIN: POST path/06"
@@ -120,9 +119,9 @@ route "path" <| (Advice.router [log] <| fun _ ->
           printfn "MAIN: GET path/07, id=%s" id
           return 
             Response.Ok {Name = "get"; Age = 20}
-            |> Response.appendHeaders 
-               [ ResponseHeader.Age <| TimeSpan(12, 13, 14)
-                 ResponseHeader.ContentType <| Headers.MediaTypeHeaderValue("text/plain")] }
+            |> Response.headers 
+               [ ResponseHeader.Age <== TimeSpan(12, 13, 14)
+                 ResponseHeader.ContentType <== MediaTypeHeaderValue("text/plain")] }
       ]
 
     "08", fun _ -> 

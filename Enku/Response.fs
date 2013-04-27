@@ -20,27 +20,27 @@ open System.Net.Http
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Response =
 
-  let appendHeaders headerSetters (Response resposeBuilder) = Response(fun (requestMessage) ->
-    let responseMessage = resposeBuilder requestMessage
-    headerSetters |> List.iter (fun setter -> setter responseMessage)
-    responseMessage)
+  let headers manipulators (Response builder) = Response(fun (req) ->
+    let res = builder req
+    List.iter (fun manipulator -> manipulator res) manipulators 
+    res)
 
-  let setReasonPhrase reasonPhrase (Response responseBuilder) = Response(fun (requestMessage) ->
-    let responseMessage = responseBuilder requestMessage
-    responseMessage.ReasonPhrase <- reasonPhrase
-    responseMessage)
+  let setReasonPhrase reasonPhrase (Response builder) = Response(fun (req) ->
+    let res = builder req
+    res.ReasonPhrase <- reasonPhrase
+    res)
 
-  let setVersion version (Response responseBuilder) = Response(fun (requestMessage) ->
-    let responseMessage = responseBuilder requestMessage
-    responseMessage.Version <- version
-    responseMessage)
+  let setVersion version (Response builder) = Response(fun (req) ->
+    let res = builder req
+    res.Version <- version
+    res)
 
-  let make statusCode value = Response(fun (requestMessage) ->
+  let make statusCode value = Response(fun (req) ->
     match box value with
     | :? exn as exn-> 
-      requestMessage.CreateErrorResponse(statusCode, exn)
+      req.CreateErrorResponse(statusCode, exn)
     | _ ->
-      requestMessage.CreateResponse(statusCode, value) )
+      req.CreateResponse(statusCode, value) )
 
   /// HTTP status 100
   let Continue value = 

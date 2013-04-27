@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="Prelude.fs" />
     <Compile Include="Validation.fs" />
+    <Compile Include="Header.fs" />
     <Compile Include="RequestHeader.fs" />
     <Compile Include="Request.fs" />
     <Compile Include="ResponseHeader.fs" />
