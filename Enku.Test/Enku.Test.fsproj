@@ -36,6 +36,10 @@
     <Reference Include="FSharp.Core, Version=4.3.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <Private>True</Private>
     </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\packages\Newtonsoft.Json.5.0.4\lib\net40\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="nunit.framework">
       <HintPath>..\packages\NUnit.2.6.2\lib\nunit.framework.dll</HintPath>
       <Private>True</Private>
@@ -50,9 +54,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assert.fs" />
-    <Compile Include="PreludeTest.fs" />
-    <Compile Include="ValidatorTest.fs" />
-    <Compile Include="ActionTest.fs" />
+    <Compile Include="ResultTest.fs" />
+    <Compile Include="HeaderTest.fs" />
+    <Compile Include="RequestTest.fs" />
+    <Compile Include="ResponseTest.fs" />
+    <Compile Include="AdviceTest.fs" />
+    <Compile Include="ConstraintTest.fs" />
+    <Compile Include="ValidationTest.fs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

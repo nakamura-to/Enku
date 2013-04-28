@@ -10,17 +10,20 @@
 // You must not remove this notice, or any other, from this software.
 //----------------------------------------------------------------------------
 
-namespace Enku
+namespace Enku.Test
 
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module Header =
+open NUnit.Framework
+open System.Net.Http
+open Enku
 
-  type Manipulation<'value, 'item> =
-    | Add of 'value
-    | Remove of 'item
-    | Clear
+module HeaderTest =
 
-[<AutoOpen>]
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module HeaderOperators =
-  let (<=>) f value = f (Header.Add value)
+  [<Test>]
+  let ``<== operator should apply Header.Add``() =
+    let f = function
+      | Header.Add value -> value
+      | _ -> fail ()
+    
+    f <=> 10 |> isEqualTo 10
+    f <| Header.Add 10 |> isEqualTo 10
+

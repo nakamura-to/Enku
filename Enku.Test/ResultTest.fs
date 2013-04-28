@@ -13,9 +13,15 @@
 namespace Enku.Test
 
 open NUnit.Framework
-open System.Net.Http
-open System.Text.RegularExpressions
 open Enku
 
-module ActionTest = ()
+module ResultTest =
+
+  [<Test>]
+  let ``Ok and Error should contain each value``() =
+    let calc x y =
+      if y = 0 then Result.Error "illegal"
+      else Result.Ok <| x / y
+    calc 10 2 |> isEqualTo (Result.Ok 5)
+    calc 10 0 |> isEqualTo (Result.Error "illegal")
 

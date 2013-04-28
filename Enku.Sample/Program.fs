@@ -125,7 +125,7 @@ route "path/" <| (Advice.router [log] <| fun _ ->
           return 
             Response.Ok {Name = "get"; Age = 20}
             |> Response.headers 
-               [ ResponseHeaders.Age <== TimeSpan(12, 13, 14)
+               [ ResponseHeaders.Age <=> TimeSpan(12, 13, 14)
                  ResponseHeaders.ContentType <| Header.Clear ] }
       ]
 
