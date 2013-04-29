@@ -20,7 +20,7 @@ open System.Runtime.CompilerServices;
 [<assembly:AssemblyTitle("Enku.dll")>]
 [<assembly:AssemblyCopyright("Copyright 2013, Toshihiro Nakamura")>]
 [<assembly:AssemblyProduct("Enku")>]
-[<assembly:AssemblyVersion("0.0.0.5")>]
+[<assembly:AssemblyVersion("0.0.0.6")>]
 
 [<assembly:InternalsVisibleTo("Enku.Test")>]
 do()
