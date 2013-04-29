@@ -30,21 +30,16 @@ module Advice =
         f req action
       wrap action
 
-  let controller (interceptors: Around list) (controller: Controller) =
+  let controller (interceptors: Around list) (actionDefs: ActionDef list) =
     if List.isEmpty interceptors then
-      controller
+      actionDefs
     else
-      let wrap inner : Controller = fun req -> 
-        let actionDefs = controller req
-        List.map (fun (constraint_, a) -> constraint_, action interceptors a) actionDefs
-      wrap controller
+      actionDefs 
+      |> List.map (fun (constraint_, a) -> constraint_, action interceptors a)
 
-  let router (interceptors: Around list) (router: Router) =
+  let router (interceptors: Around list) (controllerDefs: ControllerDef list) =
     if List.isEmpty interceptors then
-      router
+      controllerDefs
     else
-      let wrap inner : Router = fun () ->
-        let controllerDefs, errorHandler = router ()
-        let controllerDefs = List.map (fun (path, c) -> path, controller interceptors c) controllerDefs
-        controllerDefs, errorHandler
-      wrap router
+      controllerDefs
+      |> List.map (fun (path, c) -> path, fun req -> controller interceptors (c req))

@@ -89,7 +89,7 @@ module AdviceTest =
       buf.Append "d" |> ignore
       return ret }
 
-    let controller = fun req ->
+    let actionDefs = 
       [
         get, fun req -> async {
           buf.Append "e" |> ignore
@@ -100,11 +100,10 @@ module AdviceTest =
           return Response.Ok "" MediaType.Neg}
       ]
 
-    let advicedController = Advice.controller [around1; around2] controller
+    let advicedActionDefs = Advice.controller [around1; around2] actionDefs
     use req = new HttpRequestMessage()
     let req = Request req
-    let actionDefs = advicedController req
-    actionDefs
+    advicedActionDefs
     |> List.iter (fun (_, action) ->
       action req
       |> Async.RunSynchronously
@@ -116,7 +115,7 @@ module AdviceTest =
   let ``Advice.controller should return the original controller when interceptors is empty``() =
     let buf = StringBuilder()
 
-    let controller = fun req ->
+    let actionDefs =
       [
         get, fun req -> async {
           buf.Append "e" |> ignore
@@ -127,11 +126,10 @@ module AdviceTest =
           return Response.Ok "" MediaType.Neg}
       ]
 
-    let advicedController = Advice.controller [] controller
+    let advicedActionDefs = Advice.controller [] actionDefs
     use req = new HttpRequestMessage()
     let req = Request req
-    let actionDefs = advicedController req
-    actionDefs
+    advicedActionDefs
     |> List.iter (fun (_, action) ->
       action req
       |> Async.RunSynchronously
@@ -155,7 +153,7 @@ module AdviceTest =
       buf.Append "d" |> ignore
       return ret }
     
-    let router = fun _ ->
+    let controllerDefs =
       [
       "hoge", fun req ->
         [
@@ -173,13 +171,12 @@ module AdviceTest =
             buf.Append "g" |> ignore
             return Response.Ok "" MediaType.Neg}
         ]
-      ], fun req e -> Response.Ok "" MediaType.Neg
+      ]
 
-    let advicedRouter = Advice.router [around1; around2] router
+    let advicedControllerDefs = Advice.router [around1; around2] controllerDefs
     use req = new HttpRequestMessage()
     let req = Request req
-    let controllerDefs, _ = advicedRouter ()
-    controllerDefs
+    advicedControllerDefs
     |> List.iter (fun (_, controller) ->
       let actionDefs = controller req
       actionDefs
@@ -194,7 +191,7 @@ module AdviceTest =
   let ``Advice.router should return the original router when interceptors is empty``() =
     let buf = StringBuilder()
 
-    let router = fun _ ->
+    let controllerDefs =
       [
       "hoge", fun req ->
         [
@@ -212,13 +209,12 @@ module AdviceTest =
             buf.Append "g" |> ignore
             return Response.Ok "" MediaType.Neg}
         ]
-      ], fun req e -> Response.Ok "" MediaType.Neg
+      ]
 
-    let advicedRouter = Advice.router [] router
+    let advicedControllerDefs = Advice.router [] controllerDefs
     use req = new HttpRequestMessage()
     let req = Request req
-    let controllerDefs, _ = advicedRouter ()
-    controllerDefs
+    advicedControllerDefs
     |> List.iter (fun (_, controller) ->
       let actionDefs = controller req
       actionDefs

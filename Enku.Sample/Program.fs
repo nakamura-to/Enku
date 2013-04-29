@@ -112,7 +112,8 @@ route "path/" <| fun _ ->
             | h :: _ -> return Response.BadRequest h MediaType.Neg }
       ]
     // intercept controller
-    "7/{?id}", Advice.controller [appendServerHeader] <| fun _ -> 
+    "7/{?id}", fun _ -> 
+      Advice.controller [appendServerHeader] <|
       [ 
         get, fun req -> async {
           let id = Request.routeValue "id" req
@@ -211,15 +212,17 @@ async {
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
   content |> isEqualTo """{"name":"get","age":20}"""
 
-  printfn "POST path/8"
+  printfn "POST path/8: validation error"
   use! response = Async.AwaitTask <| client.PostAsJsonAsync("path/8", {Name = "hoge"; Age = 11})
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
   content |> isEqualTo "\"Age is not in the range 15 through 20.\""
 
+  printfn "POST path/8: format error"
   use! response = Async.AwaitTask <| client.PostAsJsonAsync("path/8", "test")
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
   content |> isEqualTo "\"format error.\""
 
+  printfn "All Done!"
   Console.ReadKey() |> ignore
 }
 |> Async.RunSynchronously
