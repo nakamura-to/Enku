@@ -43,7 +43,7 @@ module AdviceTest =
 
     let action = fun req -> async {
       buf.Append "e" |> ignore
-      return Response.Ok ""}
+      return Response.Ok "" MediaType.Neg}
 
     let advicedAction = Advice.action [around1; around2] action
 
@@ -61,7 +61,7 @@ module AdviceTest =
 
     let action = fun req -> async {
       buf.Append "e" |> ignore
-      return Response.Ok ""}
+      return Response.Ok "" MediaType.Neg}
 
     let advicedAction = Advice.action [] action
 
@@ -93,11 +93,11 @@ module AdviceTest =
       [
         get, fun req -> async {
           buf.Append "e" |> ignore
-          return Response.Ok ""}
+          return Response.Ok "" MediaType.Neg}
 
         put, fun req -> async {
           buf.Append "f" |> ignore
-          return Response.Ok ""}
+          return Response.Ok "" MediaType.Neg}
       ]
 
     let advicedController = Advice.controller [around1; around2] controller
@@ -120,11 +120,11 @@ module AdviceTest =
       [
         get, fun req -> async {
           buf.Append "e" |> ignore
-          return Response.Ok ""}
+          return Response.Ok "" MediaType.Neg}
 
         put, fun req -> async {
           buf.Append "f" |> ignore
-          return Response.Ok ""}
+          return Response.Ok "" MediaType.Neg}
       ]
 
     let advicedController = Advice.controller [] controller
@@ -161,19 +161,19 @@ module AdviceTest =
         [
           get, fun req -> async {
             buf.Append "e" |> ignore
-            return Response.Ok ""}
+            return Response.Ok "" MediaType.Neg}
 
           put, fun req -> async {
             buf.Append "f" |> ignore
-            return Response.Ok ""}
+            return Response.Ok "" MediaType.Neg}
         ]
       "foo", fun req ->
         [
           get, fun req -> async {
             buf.Append "g" |> ignore
-            return Response.Ok ""}
+            return Response.Ok "" MediaType.Neg}
         ]
-      ], fun req e -> Response.Ok ""
+      ], fun req e -> Response.Ok "" MediaType.Neg
 
     let advicedRouter = Advice.router [around1; around2] router
     use req = new HttpRequestMessage()
@@ -200,19 +200,19 @@ module AdviceTest =
         [
           get, fun req -> async {
             buf.Append "e" |> ignore
-            return Response.Ok ""}
+            return Response.Ok "" MediaType.Neg}
 
           put, fun req -> async {
             buf.Append "f" |> ignore
-            return Response.Ok ""}
+            return Response.Ok "" MediaType.Neg}
         ]
       "foo", fun req ->
         [
           get, fun req -> async {
             buf.Append "g" |> ignore
-            return Response.Ok ""}
+            return Response.Ok "" MediaType.Neg}
         ]
-      ], fun req e -> Response.Ok ""
+      ], fun req e -> Response.Ok "" MediaType.Neg
 
     let advicedRouter = Advice.router [] router
     use req = new HttpRequestMessage()

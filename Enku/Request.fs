@@ -27,12 +27,8 @@ module Request =
     type FormatterLogger(errors: ResizeArray<exn>) =
       interface IFormatterLogger with
         member this.LogError(errorPath: string, errorMessage: string) = 
-          if errorPath = null then invalidArg "errorPath" "The arg must not null"
-          if errorMessage = null then invalidArg "errorMessage" "The arg must not be null"
           errors.Add(FormatError(errorPath, Exception(errorMessage)))
         member this.LogError(errorPath: string, exn: exn) =
-          if errorPath = null then invalidArg "errorPath" "The arg must not null"
-          if exn = null then invalidArg "exn" "The arg must not be null"
           errors.Add(FormatError(errorPath, exn))
 
     let toKeyValuesMap keyValuePairs =

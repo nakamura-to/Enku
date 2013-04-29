@@ -22,12 +22,18 @@ module Response =
 
   module Helper =
     
-    let make statusCode value = Response(fun req ->
+    let make statusCode value mediaType = Response(fun req ->
       match box value with
       | :? exn as exn-> 
         req.CreateErrorResponse(statusCode, exn)
       | _ ->
-        req.CreateResponse(statusCode, value) )
+        match mediaType with
+        | MediaType.Neg ->
+          req.CreateResponse(statusCode, value)
+        | MediaType.Name mediaType ->
+          req.CreateResponse(statusCode, value, mediaType)
+        | MediaType.Formatter formatter ->
+          req.CreateResponse(statusCode, value, formatter) )
 
   let headers manipulators (Response builder) = Response(fun req ->
     let res = builder req
@@ -44,193 +50,193 @@ module Response =
     res.Version <- version
     res)
 
-  let make (statusCode: int) value =
-    Helper.make (unbox<HttpStatusCode> (box statusCode)) value
+  let make (statusCode: int) value mediaType =
+    Helper.make (unbox<HttpStatusCode> (box statusCode)) value mediaType
 
   /// HTTP status 100
-  let Continue value = 
-    Helper.make HttpStatusCode.Continue value
+  let Continue value mediaType = 
+    Helper.make HttpStatusCode.Continue value mediaType
 
   /// HTTP status 101
-  let SwitchingProtocols value = 
-    Helper.make HttpStatusCode.SwitchingProtocols value
+  let SwitchingProtocols value mediaType = 
+    Helper.make HttpStatusCode.SwitchingProtocols value mediaType
 
   /// HTTP status 200
-  let Ok value =
-    Helper.make HttpStatusCode.OK value
+  let Ok value mediaType =
+    Helper.make HttpStatusCode.OK value mediaType
 
   /// HTTP status 201
-  let Created value =
-    Helper.make HttpStatusCode.Created value
+  let Created value mediaType =
+    Helper.make HttpStatusCode.Created value mediaType
 
   /// HTTP status 202
-  let Accepted value =
-    Helper.make HttpStatusCode.Accepted value
+  let Accepted value mediaType =
+    Helper.make HttpStatusCode.Accepted value mediaType
 
   /// HTTP status 203
-  let NonAuthoritativeInformation value =
-    Helper.make HttpStatusCode.NonAuthoritativeInformation value
+  let NonAuthoritativeInformation value mediaType =
+    Helper.make HttpStatusCode.NonAuthoritativeInformation value mediaType
 
   /// HTTP status 204
-  let NoContent value =
-    Helper.make HttpStatusCode.NoContent value
+  let NoContent value mediaType =
+    Helper.make HttpStatusCode.NoContent value mediaType
 
   /// HTTP status 205
-  let ResetContent value =
-    Helper.make HttpStatusCode.ResetContent value
+  let ResetContent value mediaType =
+    Helper.make HttpStatusCode.ResetContent value mediaType
 
   /// HTTP status 206
-  let PartialContent value =
-    Helper.make HttpStatusCode.PartialContent value
+  let PartialContent value mediaType =
+    Helper.make HttpStatusCode.PartialContent value mediaType
 
   /// HTTP status 300
-  let Ambiguous value =
-    Helper.make HttpStatusCode.Ambiguous value
+  let Ambiguous value mediaType =
+    Helper.make HttpStatusCode.Ambiguous value mediaType
 
   /// HTTP status 300
-  let MultipleChoices value =
-    Helper.make HttpStatusCode.MultipleChoices value
+  let MultipleChoices value mediaType =
+    Helper.make HttpStatusCode.MultipleChoices value mediaType
 
   /// HTTP status 301
-  let Moved value =
+  let Moved value mediaType =
     Helper.make HttpStatusCode.Moved value
 
   /// HTTP status 301
-  let MovedPermanently value =
-    Helper.make HttpStatusCode.MovedPermanently value
+  let MovedPermanently value mediaType =
+    Helper.make HttpStatusCode.MovedPermanently value mediaType
 
   /// HTTP status 302
-  let Found value =
-    Helper.make HttpStatusCode.Found value
+  let Found value mediaType =
+    Helper.make HttpStatusCode.Found value mediaType
 
   /// HTTP status 302
-  let Redirect value =
-    Helper.make HttpStatusCode.Redirect value
+  let Redirect value mediaType =
+    Helper.make HttpStatusCode.Redirect value mediaType
 
   /// HTTP status 303
-  let RedirectMethod value = 
-    Helper.make HttpStatusCode.RedirectMethod value
+  let RedirectMethod value mediaType = 
+    Helper.make HttpStatusCode.RedirectMethod value mediaType
 
   /// HTTP status 303
-  let SeeOther value =
-    Helper.make HttpStatusCode.SeeOther value
+  let SeeOther value mediaType =
+    Helper.make HttpStatusCode.SeeOther value mediaType
 
   /// HTTP status 304
-  let NotModified value =
-    Helper.make HttpStatusCode.NotModified value
+  let NotModified value mediaType =
+    Helper.make HttpStatusCode.NotModified value mediaType
 
   /// HTTP status 305
-  let UseProxy value =
-    Helper.make HttpStatusCode.UseProxy value
+  let UseProxy value mediaType =
+    Helper.make HttpStatusCode.UseProxy value mediaType
 
   /// HTTP status 306
-  let Unused value =
-    Helper.make HttpStatusCode.Unused value
+  let Unused value mediaType =
+    Helper.make HttpStatusCode.Unused value mediaType
 
   /// HTTP status 307
-  let RedirectKeepVerb value =
-    Helper.make HttpStatusCode.RedirectKeepVerb value
+  let RedirectKeepVerb value mediaType =
+    Helper.make HttpStatusCode.RedirectKeepVerb value mediaType
 
   /// HTTP status 307
-  let TemporaryRedirect value =
-    Helper.make HttpStatusCode.TemporaryRedirect value
+  let TemporaryRedirect value mediaType =
+    Helper.make HttpStatusCode.TemporaryRedirect value mediaType
 
   /// HTTP status 400
-  let BadRequest value =
-    Helper.make HttpStatusCode.BadRequest value
+  let BadRequest value mediaType =
+    Helper.make HttpStatusCode.BadRequest value mediaType
 
   /// HTTP status 401
-  let Unauthorized value =
-    Helper.make HttpStatusCode.Unauthorized value
+  let Unauthorized value mediaType =
+    Helper.make HttpStatusCode.Unauthorized value mediaType
 
   /// HTTP status 402
-  let PaymentRequired value =
-    Helper.make HttpStatusCode.PaymentRequired value
+  let PaymentRequired value mediaType =
+    Helper.make HttpStatusCode.PaymentRequired value mediaType
 
   /// HTTP status 403
-  let Forbidden value =
-    Helper.make HttpStatusCode.Forbidden value
+  let Forbidden value mediaType =
+    Helper.make HttpStatusCode.Forbidden value mediaType
 
   /// HTTP status 404
-  let NotFound value = 
-    Helper.make HttpStatusCode.NotFound value
+  let NotFound value mediaType = 
+    Helper.make HttpStatusCode.NotFound value mediaType
 
   /// HTTP status 405
-  let MethodNotAllowed value =
-    Helper.make HttpStatusCode.MethodNotAllowed value
+  let MethodNotAllowed value mediaType =
+    Helper.make HttpStatusCode.MethodNotAllowed value mediaType
 
   /// HTTP status 406
-  let NotAcceptable value =
-    Helper.make HttpStatusCode.NotAcceptable value
+  let NotAcceptable value mediaType =
+    Helper.make HttpStatusCode.NotAcceptable value mediaType
 
   /// HTTP status 407
-  let ProxyAuthenticationRequired value = 
-    Helper.make HttpStatusCode.ProxyAuthenticationRequired value
+  let ProxyAuthenticationRequired value mediaType = 
+    Helper.make HttpStatusCode.ProxyAuthenticationRequired value mediaType
 
   /// HTTP status 408
-  let RequestTimeout value = 
-    Helper.make HttpStatusCode.RequestTimeout value
+  let RequestTimeout value mediaType = 
+    Helper.make HttpStatusCode.RequestTimeout value mediaType
 
   /// HTTP status 409
-  let Conflict value =
-    Helper.make HttpStatusCode.Conflict value
+  let Conflict value mediaType =
+    Helper.make HttpStatusCode.Conflict value mediaType
 
   /// HTTP status 410
-  let Gone value =
-    Helper.make HttpStatusCode.Gone value
+  let Gone value mediaType =
+    Helper.make HttpStatusCode.Gone value mediaType
 
   /// HTTP status 411
-  let LengthRequired value =
-    Helper.make HttpStatusCode.LengthRequired value
+  let LengthRequired value mediaType =
+    Helper.make HttpStatusCode.LengthRequired value mediaType
 
   /// HTTP status 412
-  let PreconditionFailed value =
-    Helper.make HttpStatusCode.PreconditionFailed value
+  let PreconditionFailed value mediaType =
+    Helper.make HttpStatusCode.PreconditionFailed value mediaType
 
   /// HTTP status 413
-  let RequestEntityTooLarge value =
-    Helper.make HttpStatusCode.RequestEntityTooLarge value
+  let RequestEntityTooLarge value mediaType =
+    Helper.make HttpStatusCode.RequestEntityTooLarge value mediaType
 
   /// HTTP status 414
-  let RequestUriTooLong value =
-    Helper.make HttpStatusCode.RequestUriTooLong value
+  let RequestUriTooLong value mediaType =
+    Helper.make HttpStatusCode.RequestUriTooLong value mediaType
 
   /// HTTP status 415
-  let UnsupportedMediaType value = 
-    Helper.make HttpStatusCode.UnsupportedMediaType value
+  let UnsupportedMediaType value mediaType = 
+    Helper.make HttpStatusCode.UnsupportedMediaType value mediaType
 
   /// HTTP status 416
-  let RequestedRangeNotSatisfiable value = 
-    Helper.make HttpStatusCode.RequestedRangeNotSatisfiable value
+  let RequestedRangeNotSatisfiable value mediaType = 
+    Helper.make HttpStatusCode.RequestedRangeNotSatisfiable value mediaType
 
   /// HTTP status 417
-  let ExpectationFailed value =
-    Helper.make HttpStatusCode.ExpectationFailed value
+  let ExpectationFailed value mediaType =
+    Helper.make HttpStatusCode.ExpectationFailed value mediaType
 
   /// HTTP status 426
-  let UpgradeRequired value =
-    Helper.make (unbox<HttpStatusCode> (box 426)) value
+  let UpgradeRequired value mediaType =
+    Helper.make (unbox<HttpStatusCode> (box 426)) value mediaType
 
   /// HTTP status 500
-  let InternalServerError value =
-    Helper.make HttpStatusCode.InternalServerError value
+  let InternalServerError value mediaType =
+    Helper.make HttpStatusCode.InternalServerError value mediaType
 
   /// HTTP status 501
-  let NotImplemented value =
-    Helper.make HttpStatusCode.NotImplemented value
+  let NotImplemented value mediaType =
+    Helper.make HttpStatusCode.NotImplemented value mediaType
 
   /// HTTP status 502
-  let BadGateway value =
-    Helper.make HttpStatusCode.BadGateway value
+  let BadGateway value mediaType =
+    Helper.make HttpStatusCode.BadGateway value mediaType
 
   /// HTTP status 503
-  let ServiceUnavailable value = 
-    Helper.make HttpStatusCode.ServiceUnavailable value
+  let ServiceUnavailable value mediaType = 
+    Helper.make HttpStatusCode.ServiceUnavailable value mediaType
 
   /// HTTP status 504
-  let GatewayTimeout value = 
-    Helper.make HttpStatusCode.GatewayTimeout value
+  let GatewayTimeout value mediaType = 
+    Helper.make HttpStatusCode.GatewayTimeout value mediaType
 
   /// HTTP status 505
-  let HttpVersionNotSupported value = 
-    Helper.make HttpStatusCode.HttpVersionNotSupported value
+  let HttpVersionNotSupported value mediaType = 
+    Helper.make HttpStatusCode.HttpVersionNotSupported value mediaType

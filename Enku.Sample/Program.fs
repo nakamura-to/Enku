@@ -18,7 +18,7 @@
 // - Run Visual Studio with elevated administrator permissions, or
 // - Use Netsh.exe to give your account permissions to reserve the URL.
 
-module Program
+module Enku.Sample.Program
 
 open System
 open System.Net.Http
@@ -35,120 +35,114 @@ module V = Validation.Validator
 let setupJsonFormatter (formatter: JsonMediaTypeFormatter) =
   formatter.SerializerSettings.ContractResolver <- CamelCasePropertyNamesContractResolver()
 
-let baseAddress = new Uri("http://localhost:9090/")
-let config = new HttpSelfHostConfiguration(baseAddress)
+// configuration
+let config = new HttpSelfHostConfiguration("http://localhost:9090/")
 config.IncludeErrorDetailPolicy <- IncludeErrorDetailPolicy.Always
 config.Formatters.JsonFormatter |> setupJsonFormatter
-let route = Routing.route config
 
+// data type
 type Person = { Name: string; Age: int }
 
-let log req inner = async {
-  printfn "BEFORE1"
-  try
-    return! inner req
-  finally
-    printfn "AFTER1" }
+// around interceptor
+let appendServerHeader req inner = async {
+  let! ret = inner req
+  return 
+    ret 
+    |> Response.headers
+      [ ResponseHeaders.Server <=> ProductInfoHeaderValue("Enku.Sample", "0.1") ] }
 
-let log2 req inner = async {
-  printfn "BEFORE2"
-  try
-    return! inner req
-  finally
-    printfn "AFTER2" }
-
-route "path/" <| (Advice.router [log] <| fun _ ->
+// routing
+let route = Routing.route config
+route "path/" <| fun _ ->
   [
-    // normal
-    "01/{?id}", fun req ->
+    // actions
+    "1/{?id}", fun req ->
       [
         post, fun req -> async {
-          return Response.Ok {Name = "post"; Age = 20} }
+          return Response.Ok {Name = "post"; Age = 20} MediaType.Json }
 
         get, fun req -> async {
-          return Response.Ok {Name = "get"; Age = 20} }
+          return Response.Ok {Name = "get"; Age = 20} MediaType.Json }
       ]
-
     // action alternatives
-    "02", fun _ -> 
+    "2", fun _ -> 
       [ 
         get <|> post, fun req -> async {
-          return Response.Ok {Name = "foo"; Age = 20} } 
+          return Response.Ok {Name = "foo"; Age = 20} MediaType.Json } 
       ]
-
-    //
-    "04", fun _ -> 
+    // read request header
+    "3", fun _ -> 
       [
         get, fun req -> async {
           let host = req |> Request.headers |> RequestHeaders.Host
           let host = match host with Some v -> v | _ -> ""
-          return Response.Ok host } 
+          return Response.Ok host MediaType.Json} 
       ]
-
-    "05", fun _ -> 
+    // write to response header
+    "4", fun _ -> 
+      [
+        get, fun req -> async {
+          return 
+            Response.Ok "" MediaType.Json
+            |> Response.headers
+              [ ResponseHeaders.Location <=> Uri("http://www.google.com") ] } 
+      ]
+    // read string content
+    "5", fun _ -> 
       [
         post, fun req -> async {
           let! content = Request.asyncReadAsString req
-          return Response.Ok content }
+          return Response.Ok content MediaType.Json }
       ]
-
-    "06", Advice.controller [log] <| fun _ -> 
+    // read form content
+    "6", fun _ -> 
       [
         post, fun req -> async {
-          printfn "MAIN: POST path/06"
           let! form = Request.asyncReadAsForm req
           match form with
+          | Result.Error (h, _) ->
+            return Response.BadRequest h MediaType.Neg
           | Result.Ok form ->
             let vc = Validation.Context()
             let aaa = vc.Eval(form, "aaa", V.head <+> V.required)
             let bbb = vc.Eval(form, "bbb", V.head <+> V.required)
             let ccc = vc.Eval(form, "ccc", V.head <+> V.required)
             match vc.Errors with
-            | [] -> return Response.Ok (aaa.Value + bbb.Value + ccc.Value)
-            | h :: _ -> return Response.BadRequest h
-          | Result.Error (h, _) ->
-            return Response.BadRequest h }
+            | [] -> return Response.Ok (aaa.Value + bbb.Value + ccc.Value) MediaType.Json
+            | h :: _ -> return Response.BadRequest h MediaType.Neg }
       ]
-
-    "07/{?id}", Advice.controller [log ; log2] <| fun _ -> 
+    // intercept controller
+    "7/{?id}", Advice.controller [appendServerHeader] <| fun _ -> 
       [ 
-        post, fun req -> async {
-          let id = Request.routeValue "id" req
-          let id = match id with Some v -> v | _ -> ""
-          printfn "MAIN: POST path/07, %s" id
-          return Response.Ok {Name = "post"; Age = 20} }
-
         get, fun req -> async {
           let id = Request.routeValue "id" req
           let id = match id with Some v -> v | _ -> ""
-          printfn "MAIN: GET path/07, id=%s" id
           return 
-            Response.Ok {Name = "get"; Age = 20}
+            Response.Ok {Name = "get"; Age = 20} MediaType.Json 
             |> Response.headers 
-               [ ResponseHeaders.Age <=> TimeSpan(12, 13, 14)
-                 ResponseHeaders.ContentType <| Header.Clear ] }
+               [ ResponseHeaders.Age <=> TimeSpan(12, 13, 14) ] }
       ]
-
-    "08", fun _ -> 
+    // validation error
+    "8", fun _ -> 
+      let validate = function
+        | Result.Error _ ->
+          Result.Error "format error."
+        | Result.Ok person ->
+          let vc = Validation.Context()
+          let name = vc.Eval(<@ person.Name @>, V.required)
+          let age = vc.Eval(<@ person.Age @>, V.range 15 20 <+> V.required)
+          match vc.Errors with
+          | [] -> Result.Ok <| { Name = name.Value; Age = age.Value }
+          | h :: _ -> Result.Error h
       [ 
-        post, fun req -> 
-          let validate = function
-            | Result.Ok person ->
-              let vc = Validation.Context()
-              let name = vc.Eval(<@ person.Name @>, V.required)
-              let age = vc.Eval(<@ person.Age @>, V.range 15 20 <+> V.required)
-              match vc.Errors with
-              | [] -> Result.Ok <| { Name = name.Value; Age = age.Value }
-              | h :: _ -> Result.Error <| Response.BadRequest(h)
-            | Result.Error (h, _) -> Result.Error <| Response.BadRequest h
-          async {
-            let! person = Request.asyncReadAs<Person> req
-            match validate person with
-            | Result.Ok person -> return Response.Ok person.Name
-            | Result.Error error -> return error }
+        post, fun req -> async {
+          let! person = Request.asyncReadAs<Person> req
+          match validate person with
+          | Result.Ok person -> return Response.Ok person.Name MediaType.Json
+          | Result.Error message -> return Response.BadRequest message MediaType.Neg }
       ]
   ], 
-  fun req e -> Response.InternalServerError e)
+  fun req e -> Response.InternalServerError e MediaType.Neg
 
 type ClinetHandler() =
   inherit HttpClientHandler()
@@ -167,51 +161,64 @@ async {
   use server = new HttpSelfHostServer(config)
   do! Async.AwaitTask <| server.OpenAsync().ContinueWith(fun _ -> ())
 
-  use client = new HttpClient(new ClinetHandler(), BaseAddress = baseAddress)
-  use! response = Async.AwaitTask <| client.GetAsync("path/01/abc")
-  let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
-  printfn "sample01: %A" content 
+  use client = new HttpClient(new ClinetHandler(), BaseAddress = config.BaseAddress)
 
-  use! response = Async.AwaitTask <| client.PostAsJsonAsync("path/01", @"{ ""test"": 10}")
+  printfn "GET path/1"
+  use! response = Async.AwaitTask <| client.GetAsync("path/1/abc")
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
-  printfn "sample02: %A" content 
+  content |> isEqualTo """{"name":"get","age":20}"""
 
-  use! response = Async.AwaitTask <| client.GetAsync("path/02")
+  printfn "POST path/1"
+  use! response = Async.AwaitTask <| client.PostAsJsonAsync("path/1", "{}")
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
-  printfn "sample03: %A" content
+  content |> isEqualTo """{"name":"post","age":20}"""
 
-  use! response = Async.AwaitTask <| client.PostAsync("path/02", new StringContent(""))
+  printfn "GET path/2"
+  use! response = Async.AwaitTask <| client.GetAsync("path/2")
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
-  printfn "sample04: %A" content 
+  content |> isEqualTo """{"name":"foo","age":20}"""
 
-  use! response = Async.AwaitTask <| client.GetAsync("path/04")
+  printfn "POST path/2"
+  use! response = Async.AwaitTask <| client.PostAsync("path/2", new StringContent(""))
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
-  printfn "sample06: %A" content
+  content |> isEqualTo """{"name":"foo","age":20}"""
 
-  use! response = Async.AwaitTask <| client.PostAsync("path/05", new StringContent("echo"))
-  let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
-  printfn "sample07: %A" content
+  printfn "GET path/3"
+  use! response = Async.AwaitTask <| client.GetAsync("path/3")
+  let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync()
+  content |> isEqualTo "\"localhost:9090\""
 
+  printfn "GET path/4"
+  use! response = Async.AwaitTask <| client.GetAsync("path/4")
+  response.Headers.Location |> isEqualTo (Uri("http://www.google.com"))
+
+  printfn "POST path/5"
+  use! response = Async.AwaitTask <| client.PostAsync("path/5", new StringContent("echo"))
+  let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync()
+  content |> isEqualTo "\"echo\""
+
+  printfn "GET path/6"
   let pairs = dict ["aaa", "xxx"; "bbb", "yyy"; "ccc", "zzz"]
-  use! response = Async.AwaitTask <| client.PostAsync("path/06", new FormUrlEncodedContent(pairs))
+  use! response = Async.AwaitTask <| client.PostAsync("path/6", new FormUrlEncodedContent(pairs))
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
-  printfn "sample08: %A" content
+  content |> isEqualTo "\"xxxyyyzzz\""
 
-  use! response = Async.AwaitTask <| client.GetAsync("path/07/abc")
+  printfn "GET path/7"
+  use! response = Async.AwaitTask <| client.GetAsync("path/7/abc")
+  let server = Seq.head response.Headers.Server
+  server.Product.Name |> isEqualTo "Enku.Sample"
+  server.Product.Version |> isEqualTo "0.1"
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
-  printfn "sample09: %A" content 
+  content |> isEqualTo """{"name":"get","age":20}"""
 
-  use! response = Async.AwaitTask <| client.PostAsJsonAsync("path/07", @"{ ""test"": 10}")
+  printfn "POST path/8"
+  use! response = Async.AwaitTask <| client.PostAsJsonAsync("path/8", {Name = "hoge"; Age = 11})
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
-  printfn "sample10: %A" content 
+  content |> isEqualTo "\"Age is not in the range 15 through 20.\""
 
-  use! response = Async.AwaitTask <| client.PostAsJsonAsync("path/08", {Name = "hoge"; Age = 11})
+  use! response = Async.AwaitTask <| client.PostAsJsonAsync("path/8", "test")
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
-  printfn "sample11: %A" content 
-
-  use! response = Async.AwaitTask <| client.PostAsJsonAsync("path/08", "test")
-  let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync() 
-  printfn "sample12: %A" content
+  content |> isEqualTo "\"format error.\""
 
   Console.ReadKey() |> ignore
 }
