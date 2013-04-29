@@ -40,12 +40,12 @@ module Response =
     List.iter (fun manipulator -> manipulator res) manipulators 
     res)
 
-  let setReasonPhrase reasonPhrase (Response builder) = Response(fun req ->
+  let reasonPhrase reasonPhrase (Response builder) = Response(fun req ->
     let res = builder req
     res.ReasonPhrase <- reasonPhrase
     res)
 
-  let setVersion version (Response builder) = Response(fun req ->
+  let version version (Response builder) = Response(fun req ->
     let res = builder req
     res.Version <- version
     res)
