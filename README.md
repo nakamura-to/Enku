@@ -51,24 +51,32 @@ config.Formatters.JsonFormatter.SerializerSettings.ContractResolver <- CamelCase
 let route = Routing.route config
 
 // routing
-route "example" <| fun _ -> 
-  [ 
-    get, fun req -> async {
-      return Response.Ok "Accept GET" }
+route "api/" <| fun _ -> 
+  [
+    "example1", fun _ ->
+      [ 
+        get, fun req -> async {
+          return Response.Ok "Accept GET" MediaType.Neg }
 
-    put <|> post, fun req -> async {
-      let! content = Request.asyncReadAsString req
-      return Response.Ok <| "Accept PUT or POST: content=" + content }
+        put <|> post, fun req -> async {
+          let! content = Request.asyncReadAsString req
+          return Response.Ok ("Accept PUT or POST: content=" + content) MediaType.Neg }
 
-    any, fun req -> async {
-      return Response.Ok "Accept any HTTP methods" }
+        any, fun req -> async {
+          return Response.Ok "Accept any HTTP methods" MediaType.Neg }
+      ]
+    "example2", fun _ ->
+      [ 
+        delete, fun req -> async {
+          return Response.Ok "Accept DELETE" MediaType.Neg }
+      ]
   ], 
-  fun req e -> Response.InternalServerError e
+  fun req e -> Response.InternalServerError e MediaType.Neg
 
 // run server
 async {
   use server = new HttpSelfHostServer(config)
-  do! Async.AwaitTask <| server.OpenAsync().ContinueWith(fun _ -> ()) 
+  do! Async.AwaitTask <| server.OpenAsync().ContinueWith(fun _ -> ())
   printfn "Server running at http://localhost:9090/"
   Console.ReadKey () |> ignore }
 |> Async.RunSynchronously
@@ -77,8 +85,12 @@ async {
 Access
 
 ```
-http://localhost:9090/example
+http://localhost:9090/api/example1
 ```
+```
+http://localhost:9090/api/example2
+```
+
 
 ### Web Host Example
 
@@ -100,19 +112,27 @@ module WebApiConfig =
     let route = Routing.route config
 
     // routing
-    route "example" <| fun _ -> 
-      [ 
-        get, fun req -> async {
-          return Response.Ok "Accept GET" }
+    route "api/" <| fun _ -> 
+      [
+        "example1", fun _ ->
+          [ 
+            get, fun req -> async {
+              return Response.Ok "Accept GET" MediaType.Neg }
 
-        put <|> post, fun req -> async {
-          let! content = Request.asyncReadAsString req
-          return Response.Ok <| "Accept PUT or POST: content=" + content }
+            put <|> post, fun req -> async {
+              let! content = Request.asyncReadAsString req
+              return Response.Ok ("Accept PUT or POST: content=" + content) MediaType.Neg }
 
-        any, fun req -> async {
-          return Response.Ok "Accept any HTTP methods" }
+            any, fun req -> async {
+              return Response.Ok "Accept any HTTP methods" MediaType.Neg }
+          ]
+        "example2", fun _ ->
+          [ 
+            delete, fun req -> async {
+              return Response.Ok "Accept DELETE" MediaType.Neg }
+          ]
       ], 
-      fun req e -> Response.InternalServerError e
+      fun req e -> Response.InternalServerError e MediaType.Neg
 ```
 
 In Global.asax, use the above WebApiConfig module instead of the original WebApiConfig class.
@@ -120,10 +140,6 @@ In Global.asax, use the above WebApiConfig module instead of the original WebApi
 ```csharp
 WebApiConfig.Register(GlobalConfiguration.Configuration);
 ```
-
-## Resources
-
-- [Web API in a F#-way](http://www.rvl.io/nakamura_to/web-api-in-a-fsharp-way)
 
 ## License
 
