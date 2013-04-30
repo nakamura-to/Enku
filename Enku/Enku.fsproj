@@ -48,9 +48,9 @@
     <Compile Include="Result.fs" />
     <Compile Include="Header.fs" />
     <Compile Include="MediaType.fs" />
-    <Compile Include="RequestHeader.fs" />
+    <Compile Include="RequestHeaders.fs" />
     <Compile Include="Request.fs" />
-    <Compile Include="ResponseHeader.fs" />
+    <Compile Include="ResponseHeaders.fs" />
     <Compile Include="Response.fs" />
     <Compile Include="Advice.fs" />
     <Compile Include="Routing.fs" />
