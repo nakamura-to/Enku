@@ -19,7 +19,7 @@ open Enku
 module HeaderTest =
 
   [<Test>]
-  let ``<== operator should apply Header.Add``() =
+  let ``<=> operator should apply Header.Add``() =
     let f = function
       | Header.Add value -> value
       | _ -> fail ()
