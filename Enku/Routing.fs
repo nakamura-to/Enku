@@ -36,9 +36,8 @@ module Routing =
         "{" + key + "}")
       path, defaults
 
-    let makeHandler controller errorHandler = 
-      let pickAction req =
-        let actionDefs = controller req
+    let makeHandler controller = 
+      let pickAction req actionDefs =
         actionDefs
         |> List.tryPick (fun (constraint_, action) -> 
           if constraint_ req then Some action
@@ -50,7 +49,8 @@ module Routing =
       { new HttpMessageHandler() with
         override this.SendAsync(request, token) = 
           let req = Request request
-          let action = pickAction req
+          let actionDefs, errorHandler = controller req
+          let action = pickAction req actionDefs
           let computation = async {
             try
               let! (Response builder) = action req
@@ -69,15 +69,12 @@ module Routing =
           let computation = handler request response
           Async.StartAsTask(computation, cancellationToken = token) }
 
-  let route (config: HttpConfiguration) (basePath: string) (router: Router) =
-    let (controllerDefs: ControllerDef list), (errorHandler: ErrorHandler) = router()
-    controllerDefs
-    |> List.iter (fun (path, controller) ->
-      let path, defaults = Helper.parsePath (basePath + path)
-      let handler = Helper.makeHandler controller errorHandler
-      config.Routes.MapHttpRoute(
-        name = path,
-        routeTemplate = path,
-        defaults = defaults,
-        constraints = null,
-        handler = handler) |> ignore)
+  let route (config: HttpConfiguration) (path: string) (controller: Controller) =
+    let path, defaults = Helper.parsePath path
+    let handler = Helper.makeHandler controller
+    config.Routes.MapHttpRoute(
+      name = path,
+      routeTemplate = path,
+      defaults = defaults,
+      constraints = null,
+      handler = handler) |> ignore

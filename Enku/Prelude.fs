@@ -32,10 +32,6 @@ module Prelude =
 
   type ActionDef = Constraint * Action
 
-  type Controller = (Request -> ActionDef list)
-
-  type ControllerDef = string * Controller
-
-  type Router = (unit -> ControllerDef list * ErrorHandler)
+  type Controller = (Request -> ActionDef list * ErrorHandler)
 
   type Around = (Request -> Action -> Async<Response>)

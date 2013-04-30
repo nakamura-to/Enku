@@ -68,6 +68,26 @@ module Request =
     | Result.Ok form -> return Result.Ok <| Helper.toKeyValuesMap form
     | Result.Error (head, tail) -> return Result.Error (head, tail) }
 
+  let readAsString req =
+    asyncReadAsString req
+    |> Async.RunSynchronously
+
+  let readAsStream req =
+    asyncReadAsStream req
+    |> Async.RunSynchronously
+
+  let readAsBytes req =
+    asyncReadAsBytes req
+    |> Async.RunSynchronously
+
+  let readAs<'T> req =
+    asyncReadAs<'T> req
+    |> Async.RunSynchronously
+
+  let readAsForm req =
+    asyncReadAsForm req
+    |> Async.RunSynchronously
+
   let queryString key (Request req) = 
     req.GetQueryNameValuePairs()
     |> Seq.tryPick (fun (KeyValue(k, v)) -> 

@@ -21,7 +21,7 @@ module Advice =
     let chain x y = fun req inner ->
       x req (fun req -> y req inner)
 
-  let action (interceptors: Around list) (action: Action) =
+  let around (interceptors: Around list) (action: Action) =
     if List.isEmpty interceptors then
       action
     else
@@ -30,16 +30,9 @@ module Advice =
         f req action
       wrap action
 
-  let controller (interceptors: Around list) (actionDefs: ActionDef list) =
+  let aroundAll (interceptors: Around list) (actionDefs: ActionDef list) =
     if List.isEmpty interceptors then
       actionDefs
     else
       actionDefs 
-      |> List.map (fun (constraint_, a) -> constraint_, action interceptors a)
-
-  let router (interceptors: Around list) (controllerDefs: ControllerDef list) =
-    if List.isEmpty interceptors then
-      controllerDefs
-    else
-      controllerDefs
-      |> List.map (fun (path, c) -> path, fun req -> controller interceptors (c req))
+      |> List.map (fun (constraint_, a) -> constraint_, around interceptors a)

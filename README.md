@@ -51,25 +51,17 @@ config.Formatters.JsonFormatter.SerializerSettings.ContractResolver <- CamelCase
 let route = Routing.route config
 
 // routing
-route "api/" <| fun _ -> 
+route "example" <| fun _ -> 
   [
-    "example1", fun _ ->
-      [ 
-        get, fun req -> async {
-          return Response.Ok "Accept GET" MediaType.Neg }
+    get, fun req -> async {
+      return Response.Ok "Accept GET" MediaType.Neg }
 
-        put <|> post, fun req -> async {
-          let! content = Request.asyncReadAsString req
-          return Response.Ok ("Accept PUT or POST: content=" + content) MediaType.Neg }
+    put <|> post, fun req -> async {
+      let! content = Request.asyncReadAsString req
+      return Response.Ok ("Accept PUT or POST: content=" + content) MediaType.Neg }
 
-        any, fun req -> async {
-          return Response.Ok "Accept any HTTP methods" MediaType.Neg }
-      ]
-    "example2", fun _ ->
-      [ 
-        delete, fun req -> async {
-          return Response.Ok "Accept DELETE" MediaType.Neg }
-      ]
+    any, fun req -> async {
+      return Response.Ok "Accept any HTTP methods" MediaType.Neg }
   ], 
   fun req e -> Response.InternalServerError e MediaType.Neg
 
@@ -85,12 +77,8 @@ async {
 Access
 
 ```
-http://localhost:9090/api/example1
+http://localhost:9090/example
 ```
-```
-http://localhost:9090/api/example2
-```
-
 
 ### Web Host Example
 
@@ -112,25 +100,17 @@ module WebApiConfig =
     let route = Routing.route config
 
     // routing
-    route "api/" <| fun _ -> 
+    route "example" <| fun _ -> 
       [
-        "example1", fun _ ->
-          [ 
-            get, fun req -> async {
-              return Response.Ok "Accept GET" MediaType.Neg }
+        get, fun req -> async {
+          return Response.Ok "Accept GET" MediaType.Neg }
 
-            put <|> post, fun req -> async {
-              let! content = Request.asyncReadAsString req
-              return Response.Ok ("Accept PUT or POST: content=" + content) MediaType.Neg }
+        put <|> post, fun req -> async {
+          let! content = Request.asyncReadAsString req
+          return Response.Ok ("Accept PUT or POST: content=" + content) MediaType.Neg }
 
-            any, fun req -> async {
-              return Response.Ok "Accept any HTTP methods" MediaType.Neg }
-          ]
-        "example2", fun _ ->
-          [ 
-            delete, fun req -> async {
-              return Response.Ok "Accept DELETE" MediaType.Neg }
-          ]
+        any, fun req -> async {
+          return Response.Ok "Accept any HTTP methods" MediaType.Neg }
       ], 
       fun req e -> Response.InternalServerError e MediaType.Neg
 ```

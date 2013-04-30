@@ -53,96 +53,108 @@ let appendServerHeader req inner = async {
 
 // routing
 let route = Routing.route config
-route "path/" <| fun _ ->
-  [
-    // actions
-    "1/{?id}", fun req ->
-      [
-        post, fun req -> async {
-          return Response.Ok {Name = "post"; Age = 20} MediaType.Json }
 
-        get, fun req -> async {
-          return Response.Ok {Name = "get"; Age = 20} MediaType.Json }
-      ]
-    // action alternatives
-    "2", fun _ -> 
-      [ 
-        get <|> post, fun req -> async {
-          return Response.Ok {Name = "foo"; Age = 20} MediaType.Json } 
-      ]
-    // read request header
-    "3", fun _ -> 
-      [
-        get, fun req -> async {
-          let host = req |> Request.headers |> RequestHeaders.Host
-          let host = match host with Some v -> v | _ -> ""
-          return Response.Ok host MediaType.Json} 
-      ]
-    // write to response header
-    "4", fun _ -> 
-      [
-        get, fun req -> async {
-          return 
-            Response.Ok "" MediaType.Json
-            |> Response.headers
-              [ ResponseHeaders.Location <=> Uri("http://www.google.com") ] } 
-      ]
-    // read string content
-    "5", fun _ -> 
-      [
-        post, fun req -> async {
-          let! content = Request.asyncReadAsString req
-          return Response.Ok content MediaType.Json }
-      ]
-    // read form content
-    "6", fun _ -> 
-      [
-        post, fun req -> async {
-          let! form = Request.asyncReadAsForm req
-          match form with
-          | Result.Error (h, _) ->
-            return Response.BadRequest h MediaType.Neg
-          | Result.Ok form ->
-            let vc = Validation.Context()
-            let aaa = vc.Eval(form, "aaa", V.head <+> V.required)
-            let bbb = vc.Eval(form, "bbb", V.head <+> V.required)
-            let ccc = vc.Eval(form, "ccc", V.head <+> V.required)
-            match vc.Errors with
-            | [] -> return Response.Ok (aaa.Value + bbb.Value + ccc.Value) MediaType.Json
-            | h :: _ -> return Response.BadRequest h MediaType.Neg }
-      ]
-    // intercept controller
-    "7/{?id}", fun _ -> 
-      Advice.controller [appendServerHeader] <|
-      [ 
-        get, fun req -> async {
-          let id = Request.routeValue "id" req
-          let id = match id with Some v -> v | _ -> ""
-          return 
-            Response.Ok {Name = "get"; Age = 20} MediaType.Json 
-            |> Response.headers 
-               [ ResponseHeaders.Age <=> TimeSpan(12, 13, 14) ] }
-      ]
-    // validation error
-    "8", fun _ -> 
-      let validate = function
-        | Result.Error _ ->
-          Result.Error "format error."
-        | Result.Ok person ->
-          let vc = Validation.Context()
-          let name = vc.Eval(<@ person.Name @>, V.required)
-          let age = vc.Eval(<@ person.Age @>, V.range 15 20 <+> V.required)
-          match vc.Errors with
-          | [] -> Result.Ok <| { Name = name.Value; Age = age.Value }
-          | h :: _ -> Result.Error h
-      [ 
-        post, fun req -> async {
-          let! person = Request.asyncReadAs<Person> req
-          match validate person with
-          | Result.Ok person -> return Response.Ok person.Name MediaType.Json
-          | Result.Error message -> return Response.BadRequest message MediaType.Neg }
-      ]
-  ], 
+// actions
+route "path/1/{?id}" <| fun _ ->
+  [
+    post, fun req -> async {
+      return Response.Ok {Name = "post"; Age = 20} MediaType.Json }
+
+    get, fun req -> async {
+      return Response.Ok {Name = "get"; Age = 20} MediaType.Json }
+  ],
+  fun req e -> Response.InternalServerError e MediaType.Neg
+
+// action alternatives
+route "path/2" <| fun _ ->
+  [ 
+    get <|> post, fun req -> async {
+      return Response.Ok {Name = "foo"; Age = 20} MediaType.Json } 
+  ],
+  fun req e -> Response.InternalServerError e MediaType.Neg
+
+// read request header
+route "path/3" <| fun _ ->
+  [
+    get, fun req -> async {
+      let host = req |> Request.headers |> RequestHeaders.Host
+      let host = match host with Some v -> v | _ -> ""
+      return Response.Ok host MediaType.Json} 
+  ],
+  fun req e -> Response.InternalServerError e MediaType.Neg
+
+// write to response header
+route "path/4" <| fun _ -> 
+  [
+    get, fun req -> async {
+      return 
+        Response.Ok "" MediaType.Json
+        |> Response.headers
+          [ ResponseHeaders.Location <=> Uri("http://www.google.com") ] } 
+  ],
+  fun req e -> Response.InternalServerError e MediaType.Neg
+
+// read string content
+route "path/5" <| fun _ -> 
+  [
+    post, fun req -> async {
+      let! content = Request.asyncReadAsString req
+      return Response.Ok content MediaType.Json }
+  ],
+  fun req e -> Response.InternalServerError e MediaType.Neg
+
+// read form content
+route "path/6" <| fun _ -> 
+  [
+    post, fun req -> async {
+      let! form = Request.asyncReadAsForm req
+      match form with
+      | Result.Error (h, _) ->
+        return Response.BadRequest h MediaType.Neg
+      | Result.Ok form ->
+        let vc = Validation.Context()
+        let aaa = vc.Eval(form, "aaa", V.head <+> V.required)
+        let bbb = vc.Eval(form, "bbb", V.head <+> V.required)
+        let ccc = vc.Eval(form, "ccc", V.head <+> V.required)
+        match vc.Errors with
+        | [] -> return Response.Ok (aaa.Value + bbb.Value + ccc.Value) MediaType.Json
+        | h :: _ -> return Response.BadRequest h MediaType.Neg }
+  ],
+  fun req e -> Response.InternalServerError e MediaType.Neg
+
+// intercept controller
+route "path/7/{?id}" <| fun _ -> 
+  Advice.aroundAll [appendServerHeader] <|
+  [ 
+    get, fun req -> async {
+      let id = Request.routeValue "id" req
+      let id = match id with Some v -> v | _ -> ""
+      return 
+        Response.Ok {Name = "get"; Age = 20} MediaType.Json 
+        |> Response.headers 
+            [ ResponseHeaders.Age <=> TimeSpan(12, 13, 14) ] }
+  ],
+  fun req e -> Response.InternalServerError e MediaType.Neg
+
+// validation error
+route "path/8" <| fun _ -> 
+  let validate = function
+    | Result.Error _ ->
+      Result.Error "format error."
+    | Result.Ok person ->
+      let vc = Validation.Context()
+      let name = vc.Eval(<@ person.Name @>, V.required)
+      let age = vc.Eval(<@ person.Age @>, V.range 15 20 <+> V.required)
+      match vc.Errors with
+      | [] -> Result.Ok <| { Name = name.Value; Age = age.Value }
+      | h :: _ -> Result.Error h
+  [ 
+    post, fun req -> async {
+      let! person = Request.asyncReadAs<Person> req
+      match validate person with
+      | Result.Ok person -> return Response.Ok person.Name MediaType.Json
+      | Result.Error message -> return Response.BadRequest message MediaType.Neg }
+  ],
   fun req e -> Response.InternalServerError e MediaType.Neg
 
 type ClinetHandler() =

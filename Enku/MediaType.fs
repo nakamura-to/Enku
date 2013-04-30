@@ -18,10 +18,15 @@ open System.Net.Http.Formatting
 module MediaType =
 
   type T =
+    /// content negotiation
     | Neg
+    /// media type
     | Name of string
+    /// media type formatter
     | Formatter of MediaTypeFormatter
 
+  /// application/json media type
   let Json = Name "application/json"
 
+  /// application/xml media type
   let Xml = Name "application/xml"

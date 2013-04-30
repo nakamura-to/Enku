@@ -45,7 +45,7 @@ module AdviceTest =
       buf.Append "e" |> ignore
       return Response.Ok "" MediaType.Neg}
 
-    let advicedAction = Advice.action [around1; around2] action
+    let advicedAction = Advice.around [around1; around2] action
 
     use req = new HttpRequestMessage()
     let req = Request req
@@ -63,7 +63,7 @@ module AdviceTest =
       buf.Append "e" |> ignore
       return Response.Ok "" MediaType.Neg}
 
-    let advicedAction = Advice.action [] action
+    let advicedAction = Advice.around [] action
 
     use req = new HttpRequestMessage()
     let req = Request req
@@ -100,7 +100,7 @@ module AdviceTest =
           return Response.Ok "" MediaType.Neg}
       ]
 
-    let advicedActionDefs = Advice.controller [around1; around2] actionDefs
+    let advicedActionDefs = Advice.aroundAll [around1; around2] actionDefs
     use req = new HttpRequestMessage()
     let req = Request req
     advicedActionDefs
@@ -126,7 +126,7 @@ module AdviceTest =
           return Response.Ok "" MediaType.Neg}
       ]
 
-    let advicedActionDefs = Advice.controller [] actionDefs
+    let advicedActionDefs = Advice.aroundAll [] actionDefs
     use req = new HttpRequestMessage()
     let req = Request req
     advicedActionDefs
@@ -136,91 +136,3 @@ module AdviceTest =
       |> ignore)
 
     buf.ToString() |> isEqualTo "ef"
-
-  [<Test>]
-  let ``Advice.route should advice interceptors around all actions``() =
-    let buf = StringBuilder()
-
-    let around1 = fun req inner -> async {
-      buf.Append "a" |> ignore
-      let! ret = inner req
-      buf.Append "b" |> ignore
-      return ret }
-      
-    let around2 = fun req inner -> async {
-      buf.Append "c" |> ignore
-      let! ret = inner req
-      buf.Append "d" |> ignore
-      return ret }
-    
-    let controllerDefs =
-      [
-      "hoge", fun req ->
-        [
-          get, fun req -> async {
-            buf.Append "e" |> ignore
-            return Response.Ok "" MediaType.Neg}
-
-          put, fun req -> async {
-            buf.Append "f" |> ignore
-            return Response.Ok "" MediaType.Neg}
-        ]
-      "foo", fun req ->
-        [
-          get, fun req -> async {
-            buf.Append "g" |> ignore
-            return Response.Ok "" MediaType.Neg}
-        ]
-      ]
-
-    let advicedControllerDefs = Advice.router [around1; around2] controllerDefs
-    use req = new HttpRequestMessage()
-    let req = Request req
-    advicedControllerDefs
-    |> List.iter (fun (_, controller) ->
-      let actionDefs = controller req
-      actionDefs
-      |> List.iter (fun (_, action) ->
-        action req
-        |> Async.RunSynchronously
-        |> ignore))
-
-    buf.ToString() |> isEqualTo "acedbacfdbacgdb"
-
-  [<Test>]
-  let ``Advice.router should return the original router when interceptors is empty``() =
-    let buf = StringBuilder()
-
-    let controllerDefs =
-      [
-      "hoge", fun req ->
-        [
-          get, fun req -> async {
-            buf.Append "e" |> ignore
-            return Response.Ok "" MediaType.Neg}
-
-          put, fun req -> async {
-            buf.Append "f" |> ignore
-            return Response.Ok "" MediaType.Neg}
-        ]
-      "foo", fun req ->
-        [
-          get, fun req -> async {
-            buf.Append "g" |> ignore
-            return Response.Ok "" MediaType.Neg}
-        ]
-      ]
-
-    let advicedControllerDefs = Advice.router [] controllerDefs
-    use req = new HttpRequestMessage()
-    let req = Request req
-    advicedControllerDefs
-    |> List.iter (fun (_, controller) ->
-      let actionDefs = controller req
-      actionDefs
-      |> List.iter (fun (_, action) ->
-        action req
-        |> Async.RunSynchronously
-        |> ignore))
-
-    buf.ToString() |> isEqualTo "efg"
