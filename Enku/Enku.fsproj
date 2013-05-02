@@ -54,6 +54,7 @@
     <Compile Include="Advice.fs" />
     <Compile Include="Routing.fs" />
     <Compile Include="Constraint.fs" />
+    <Compile Include="Validator.fs" />
     <Compile Include="Validation.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <None Include="App.config" />

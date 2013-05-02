@@ -30,8 +30,6 @@ open Newtonsoft.Json.Serialization
 open Newtonsoft.Json.Linq
 open Enku
 
-module V = Validation.Validator
-
 let setupJsonFormatter (formatter: JsonMediaTypeFormatter) =
   formatter.SerializerSettings.ContractResolver <- CamelCasePropertyNamesContractResolver()
 
@@ -113,9 +111,9 @@ route "path/6" <| fun _ ->
         return Response.BadRequest h MediaType.Neg
       | Result.Ok form ->
         let vc = Validation.Context()
-        let aaa = vc.Eval(form, "aaa", V.head <+> V.required)
-        let bbb = vc.Eval(form, "bbb", V.head <+> V.required)
-        let ccc = vc.Eval(form, "ccc", V.head <+> V.required)
+        let aaa = vc.Eval(form, "aaa", Validator.head <+> Validator.required)
+        let bbb = vc.Eval(form, "bbb", Validator.head <+> Validator.required)
+        let ccc = vc.Eval(form, "ccc", Validator.head <+> Validator.required)
         match vc.Errors with
         | [] -> return Response.Ok (aaa.Value + bbb.Value + ccc.Value) MediaType.json
         | h :: _ -> return Response.BadRequest h MediaType.Neg }
@@ -143,8 +141,8 @@ route "path/8" <| fun _ ->
       Result.Error "format error."
     | Result.Ok person ->
       let vc = Validation.Context()
-      let name = vc.Eval(<@ person.Name @>, V.required)
-      let age = vc.Eval(<@ person.Age @>, V.range 15 20 <+> V.required)
+      let name = vc.Eval(<@ person.Name @>, Validator.required)
+      let age = vc.Eval(<@ person.Age @>, Validator.range 15 20 <+> Validator.required)
       match vc.Errors with
       | [] -> Result.Ok <| { Name = name.Value; Age = age.Value }
       | h :: _ -> Result.Error h

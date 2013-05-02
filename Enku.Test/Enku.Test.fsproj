@@ -64,6 +64,7 @@
     <Compile Include="ResponseTest.fs" />
     <Compile Include="AdviceTest.fs" />
     <Compile Include="ConstraintTest.fs" />
+    <Compile Include="ValidatorTest.fs" />
     <Compile Include="ValidationTest.fs" />
     <None Include="App.config" />
     <None Include="packages.config" />
