@@ -58,10 +58,10 @@ let route = Routing.route config
 route "path/1/{?id}" <| fun _ ->
   [
     post, fun req -> async {
-      return Response.Ok {Name = "post"; Age = 20} MediaType.Json }
+      return Response.Ok {Name = "post"; Age = 20} MediaType.json }
 
     get, fun req -> async {
-      return Response.Ok {Name = "get"; Age = 20} MediaType.Json }
+      return Response.Ok {Name = "get"; Age = 20} MediaType.json }
   ],
   fun req e -> Response.InternalServerError e MediaType.Neg
 
@@ -69,7 +69,7 @@ route "path/1/{?id}" <| fun _ ->
 route "path/2" <| fun _ ->
   [ 
     get <|> post, fun req -> async {
-      return Response.Ok {Name = "foo"; Age = 20} MediaType.Json } 
+      return Response.Ok {Name = "foo"; Age = 20} MediaType.json } 
   ],
   fun req e -> Response.InternalServerError e MediaType.Neg
 
@@ -79,7 +79,7 @@ route "path/3" <| fun _ ->
     get, fun req -> async {
       let host = req |> Request.headers |> RequestHeaders.Host
       let host = match host with Some v -> v | _ -> ""
-      return Response.Ok host MediaType.Json} 
+      return Response.Ok host MediaType.json} 
   ],
   fun req e -> Response.InternalServerError e MediaType.Neg
 
@@ -88,7 +88,7 @@ route "path/4" <| fun _ ->
   [
     get, fun req -> async {
       return 
-        Response.Ok "" MediaType.Json
+        Response.Ok "" MediaType.json
         |> Response.headers
           [ ResponseHeaders.Location <=> Uri("http://www.google.com") ] } 
   ],
@@ -99,7 +99,7 @@ route "path/5" <| fun _ ->
   [
     post, fun req -> async {
       let! content = Request.asyncReadAsString req
-      return Response.Ok content MediaType.Json }
+      return Response.Ok content MediaType.plain }
   ],
   fun req e -> Response.InternalServerError e MediaType.Neg
 
@@ -117,7 +117,7 @@ route "path/6" <| fun _ ->
         let bbb = vc.Eval(form, "bbb", V.head <+> V.required)
         let ccc = vc.Eval(form, "ccc", V.head <+> V.required)
         match vc.Errors with
-        | [] -> return Response.Ok (aaa.Value + bbb.Value + ccc.Value) MediaType.Json
+        | [] -> return Response.Ok (aaa.Value + bbb.Value + ccc.Value) MediaType.json
         | h :: _ -> return Response.BadRequest h MediaType.Neg }
   ],
   fun req e -> Response.InternalServerError e MediaType.Neg
@@ -130,7 +130,7 @@ route "path/7/{?id}" <| fun _ ->
       let id = Request.routeValue "id" req
       let id = match id with Some v -> v | _ -> ""
       return 
-        Response.Ok {Name = "get"; Age = 20} MediaType.Json 
+        Response.Ok {Name = "get"; Age = 20} MediaType.json 
         |> Response.headers 
             [ ResponseHeaders.Age <=> TimeSpan(12, 13, 14) ] }
   ],
@@ -152,7 +152,7 @@ route "path/8" <| fun _ ->
     post, fun req -> async {
       let! person = Request.asyncReadAs<Person> req
       match validate person with
-      | Result.Ok person -> return Response.Ok person.Name MediaType.Json
+      | Result.Ok person -> return Response.Ok person.Name MediaType.json
       | Result.Error message -> return Response.BadRequest message MediaType.Neg }
   ],
   fun req e -> Response.InternalServerError e MediaType.Neg
@@ -208,7 +208,7 @@ async {
   printfn "POST path/5"
   use! response = Async.AwaitTask <| client.PostAsync("path/5", new StringContent("echo"))
   let! content = Async.AwaitTask <| response.Content.ReadAsStringAsync()
-  content |> isEqualTo "\"echo\""
+  content |> isEqualTo "echo"
 
   printfn "GET path/6"
   let pairs = dict ["aaa", "xxx"; "bbb", "yyy"; "ccc", "zzz"]
