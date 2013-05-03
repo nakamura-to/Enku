@@ -19,10 +19,13 @@ open System.Net.Http.Formatting
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Request =
 
-  module Helper =
+  type FormatError(message: string, innerException: exn) =
+    inherit Exception(message, innerException)
 
-    type FormatError(message: string, innerException: exn) =
-      inherit Exception(message, innerException)
+  type UnknownContentTypeError() =
+    inherit Exception("maybe unknown content type")
+
+  module Helper =
 
     type FormatterLogger(errors: ResizeArray<exn>) =
       interface IFormatterLogger with
@@ -59,8 +62,13 @@ module Request =
     let! result = Async.AwaitTask <| req.Content.ReadAsAsync<'T>(formatters, logger)
     let errors = Seq.toList errors
     match errors with
-    | [] -> return Result.Ok result
-    | head :: tail -> return Result.Error (head, tail) }
+    | [] -> 
+      if box result = null then
+        return Result.Error (UnknownContentTypeError() :> exn, [])
+      else
+        return Result.Ok result
+    | head :: tail -> 
+      return Result.Error (head, tail) }
 
   let asyncReadAsForm req = async {
     let! result = asyncReadAs<FormDataCollection> req
