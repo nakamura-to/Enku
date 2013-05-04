@@ -46,7 +46,7 @@
     <Compile Include="Prelude.fs" />
     <Compile Include="Result.fs" />
     <Compile Include="Header.fs" />
-    <Compile Include="MediaType.fs" />
+    <Compile Include="Content.fs" />
     <Compile Include="RequestHeaders.fs" />
     <Compile Include="Request.fs" />
     <Compile Include="ResponseHeaders.fs" />

@@ -43,7 +43,7 @@ module AdviceTest =
 
     let action = fun req -> async {
       buf.Append "e" |> ignore
-      return Response.Ok "" MediaType.Neg}
+      return Response.Ok <| Content.negotiation ""}
 
     let advicedAction = Advice.around [around1; around2] action
 
@@ -61,7 +61,7 @@ module AdviceTest =
 
     let action = fun req -> async {
       buf.Append "e" |> ignore
-      return Response.Ok "" MediaType.Neg}
+      return Response.Ok <| Content.negotiation ""}
 
     let advicedAction = Advice.around [] action
 
@@ -93,11 +93,11 @@ module AdviceTest =
       [
         get, fun req -> async {
           buf.Append "e" |> ignore
-          return Response.Ok "" MediaType.Neg}
+          return Response.Ok <| Content.negotiation ""}
 
         put, fun req -> async {
           buf.Append "f" |> ignore
-          return Response.Ok "" MediaType.Neg}
+          return Response.Ok <| Content.negotiation ""}
       ]
 
     let advicedActionDefs = Advice.aroundAll [around1; around2] actionDefs
@@ -119,11 +119,11 @@ module AdviceTest =
       [
         get, fun req -> async {
           buf.Append "e" |> ignore
-          return Response.Ok "" MediaType.Neg}
+          return Response.Ok <| Content.negotiation ""}
 
         put, fun req -> async {
           buf.Append "f" |> ignore
-          return Response.Ok "" MediaType.Neg}
+          return Response.Ok <| Content.negotiation ""}
       ]
 
     let advicedActionDefs = Advice.aroundAll [] actionDefs

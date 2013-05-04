@@ -56,20 +56,20 @@ let route = Routing.route config
 route "path/1/{?id}" <| fun _ ->
   [
     post, fun req -> async {
-      return Response.Ok {Name = "post"; Age = 20} MediaType.json }
+      return Response.Ok <| Content.json {Name = "post"; Age = 20}}
 
     get, fun req -> async {
-      return Response.Ok {Name = "get"; Age = 20} MediaType.json }
+      return Response.Ok <| Content.json {Name = "get"; Age = 20}}
   ],
-  fun req e -> Response.InternalServerError e MediaType.Neg
+  fun req e -> Response.InternalServerError <| Content.error e
 
 // action alternatives
 route "path/2" <| fun _ ->
   [ 
     get <|> post, fun req -> async {
-      return Response.Ok {Name = "foo"; Age = 20} MediaType.json } 
+      return Response.Ok <| Content.json {Name = "foo"; Age = 20} } 
   ],
-  fun req e -> Response.InternalServerError e MediaType.Neg
+  fun req e -> Response.InternalServerError <| Content.error e
 
 // read request header
 route "path/3" <| fun _ ->
@@ -77,29 +77,29 @@ route "path/3" <| fun _ ->
     get, fun req -> async {
       let host = req |> Request.headers |> RequestHeaders.Host
       let host = match host with Some v -> v | _ -> ""
-      return Response.Ok host MediaType.json} 
+      return Response.Ok <| Content.json host} 
   ],
-  fun req e -> Response.InternalServerError e MediaType.Neg
+  fun req e -> Response.InternalServerError <| Content.error e
 
 // write to response header
 route "path/4" <| fun _ -> 
   [
     get, fun req -> async {
       return 
-        Response.Ok "" MediaType.json
+        Response.Ok <| Content.json ""
         |> Response.headers
           [ ResponseHeaders.Location <=> Uri("http://www.google.com") ] } 
   ],
-  fun req e -> Response.InternalServerError e MediaType.Neg
+  fun req e -> Response.InternalServerError <| Content.error e
 
 // read string content
 route "path/5" <| fun _ -> 
   [
     post, fun req -> async {
       let! content = Request.asyncReadAsString req
-      return Response.Ok content MediaType.plain }
+      return Response.Ok <| Content.plain content }
   ],
-  fun req e -> Response.InternalServerError e MediaType.Neg
+  fun req e -> Response.InternalServerError <| Content.error e
 
 // read form content
 route "path/6" <| fun _ -> 
@@ -111,10 +111,10 @@ route "path/6" <| fun _ ->
       let bbb = vc.Eval(form, "bbb", Validator.head <+> Validator.required)
       let ccc = vc.Eval(form, "ccc", Validator.head <+> Validator.required)
       match vc.Errors with
-      | [] -> return Response.Ok (aaa.Value + bbb.Value + ccc.Value) MediaType.json
-      | h :: _ -> return Response.BadRequest h MediaType.Neg }
+      | [] -> return Response.Ok <| Content.json (aaa.Value + bbb.Value + ccc.Value)
+      | h :: _ -> return Response.BadRequest <| Content.negotiation h }
   ],
-  fun req e -> Response.InternalServerError e MediaType.Neg
+  fun req e -> Response.InternalServerError <| Content.error e
 
 // intercept controller
 route "path/7/{?id}" <| fun _ -> 
@@ -124,11 +124,11 @@ route "path/7/{?id}" <| fun _ ->
       let id = Request.routeValue "id" req
       let id = match id with Some v -> v | _ -> ""
       return 
-        Response.Ok {Name = "get"; Age = 20} MediaType.json 
+        Response.Ok <| Content.json {Name = "get"; Age = 20}
         |> Response.headers 
             [ ResponseHeaders.Age <=> TimeSpan(12, 13, 14) ] }
   ],
-  fun req e -> Response.InternalServerError e MediaType.Neg
+  fun req e -> Response.InternalServerError <| Content.error e
 
 // validation error
 route "path/8" <| fun _ -> 
@@ -140,11 +140,16 @@ route "path/8" <| fun _ ->
       let age = vc.Eval(<@ person.Age @>, Validator.range 15 20 <+> Validator.required)
       match vc.Errors with
       | [] -> 
-        return Response.Ok person.Name MediaType.json
+        return Response.Ok <| Content.json person.Name
       | h :: _ -> 
-        return Response.BadRequest h MediaType.json }
+        return Response.BadRequest <| Content.json h}
   ],
-  fun req e -> Response.InternalServerError e MediaType.Neg
+  fun req e -> 
+    match e with
+    | :? Request.FormatError ->
+      Response.BadRequest <| Content.json "format error."
+    | _ ->
+      Response.InternalServerError <| Content.error e
 
 type ClinetHandler() =
   inherit HttpClientHandler()

@@ -44,7 +44,7 @@ module Routing =
           else None) 
         |> function 
         | Some action -> action
-        | _ -> fun req -> async { return Response.NotFound "" MediaType.Neg }
+        | _ -> fun req -> async { return Response.NotFound <| Content.negotiation "" }
     
       { new HttpMessageHandler() with
         override this.SendAsync(request, token) = 

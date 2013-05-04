@@ -31,7 +31,7 @@ module ResponseTest =
     use req = new HttpRequestMessage()
     req.Properties.[HttpPropertyKeys.HttpConfigurationKey] <- config
     let (Response builder) = 
-      Response.Ok "hoge" MediaType.Neg
+      Response.Ok <| Content.negotiation "hoge"
       |> Response.headers 
         [ ResponseHeaders.Location <=> Uri("http://example.com")
           ResponseHeaders.ContentEncoding <=> "utf-8" ]

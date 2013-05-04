@@ -59,7 +59,6 @@
     <Compile Include="Assert.fs" />
     <Compile Include="ResultTest.fs" />
     <Compile Include="HeaderTest.fs" />
-    <Compile Include="MediaTypeTest.fs" />
     <Compile Include="RequestTest.fs" />
     <Compile Include="ResponseTest.fs" />
     <Compile Include="AdviceTest.fs" />
