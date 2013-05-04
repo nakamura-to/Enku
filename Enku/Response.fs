@@ -22,8 +22,8 @@ module Response =
 
   module Helper =
     
-    let make statusCode f = Response(fun req ->
-      let (Response builder) = f statusCode
+    let make statusCode (Content content) = Response(fun req -> 
+      let (Response builder) = content statusCode
       builder req)
 
   let headers manipulators (Response builder) = Response(fun req ->
@@ -41,193 +41,193 @@ module Response =
     res.Version <- version
     res)
 
-  let make (statusCode: int) value =
-    Helper.make (unbox<HttpStatusCode> (box statusCode)) value
+  let make (statusCode: int) content =
+    Helper.make (unbox<HttpStatusCode> (box statusCode)) content
 
   /// HTTP status 100
-  let Continue value = 
-    Helper.make HttpStatusCode.Continue value
+  let Continue content = 
+    Helper.make HttpStatusCode.Continue content
 
   /// HTTP status 101
-  let SwitchingProtocols value = 
-    Helper.make HttpStatusCode.SwitchingProtocols value
+  let SwitchingProtocols content = 
+    Helper.make HttpStatusCode.SwitchingProtocols content
 
   /// HTTP status 200
-  let Ok value =
-    Helper.make HttpStatusCode.OK value
+  let Ok content =
+    Helper.make HttpStatusCode.OK content
 
   /// HTTP status 201
-  let Created value =
-    Helper.make HttpStatusCode.Created value
+  let Created content =
+    Helper.make HttpStatusCode.Created content
 
   /// HTTP status 202
-  let Accepted value =
-    Helper.make HttpStatusCode.Accepted value
+  let Accepted content =
+    Helper.make HttpStatusCode.Accepted content
 
   /// HTTP status 203
-  let NonAuthoritativeInformation value =
-    Helper.make HttpStatusCode.NonAuthoritativeInformation value
+  let NonAuthoritativeInformation content =
+    Helper.make HttpStatusCode.NonAuthoritativeInformation content
 
   /// HTTP status 204
-  let NoContent value =
-    Helper.make HttpStatusCode.NoContent value
+  let NoContent content =
+    Helper.make HttpStatusCode.NoContent content
 
   /// HTTP status 205
-  let ResetContent value =
-    Helper.make HttpStatusCode.ResetContent value
+  let ResetContent content =
+    Helper.make HttpStatusCode.ResetContent content
 
   /// HTTP status 206
-  let PartialContent value =
-    Helper.make HttpStatusCode.PartialContent value
+  let PartialContent content =
+    Helper.make HttpStatusCode.PartialContent content
 
   /// HTTP status 300
-  let Ambiguous value =
-    Helper.make HttpStatusCode.Ambiguous value
+  let Ambiguous content =
+    Helper.make HttpStatusCode.Ambiguous content
 
   /// HTTP status 300
-  let MultipleChoices value =
-    Helper.make HttpStatusCode.MultipleChoices value
+  let MultipleChoices content =
+    Helper.make HttpStatusCode.MultipleChoices content
 
   /// HTTP status 301
-  let Moved value =
-    Helper.make HttpStatusCode.Moved value
+  let Moved content =
+    Helper.make HttpStatusCode.Moved content
 
   /// HTTP status 301
-  let MovedPermanently value =
-    Helper.make HttpStatusCode.MovedPermanently value
+  let MovedPermanently content =
+    Helper.make HttpStatusCode.MovedPermanently content
 
   /// HTTP status 302
-  let Found value =
-    Helper.make HttpStatusCode.Found value
+  let Found content =
+    Helper.make HttpStatusCode.Found content
 
   /// HTTP status 302
-  let Redirect value =
-    Helper.make HttpStatusCode.Redirect value
+  let Redirect content =
+    Helper.make HttpStatusCode.Redirect content
 
   /// HTTP status 303
-  let RedirectMethod value = 
-    Helper.make HttpStatusCode.RedirectMethod value
+  let RedirectMethod content = 
+    Helper.make HttpStatusCode.RedirectMethod content
 
   /// HTTP status 303
-  let SeeOther value =
-    Helper.make HttpStatusCode.SeeOther value
+  let SeeOther content =
+    Helper.make HttpStatusCode.SeeOther content
 
   /// HTTP status 304
-  let NotModified value =
-    Helper.make HttpStatusCode.NotModified value
+  let NotModified content =
+    Helper.make HttpStatusCode.NotModified content
 
   /// HTTP status 305
-  let UseProxy value =
-    Helper.make HttpStatusCode.UseProxy value
+  let UseProxy content =
+    Helper.make HttpStatusCode.UseProxy content
 
   /// HTTP status 306
-  let Unused value =
-    Helper.make HttpStatusCode.Unused value
+  let Unused content =
+    Helper.make HttpStatusCode.Unused content
 
   /// HTTP status 307
-  let RedirectKeepVerb value =
-    Helper.make HttpStatusCode.RedirectKeepVerb value
+  let RedirectKeepVerb content =
+    Helper.make HttpStatusCode.RedirectKeepVerb content
 
   /// HTTP status 307
-  let TemporaryRedirect value =
-    Helper.make HttpStatusCode.TemporaryRedirect value
+  let TemporaryRedirect content =
+    Helper.make HttpStatusCode.TemporaryRedirect content
 
   /// HTTP status 400
-  let BadRequest value =
-    Helper.make HttpStatusCode.BadRequest value
+  let BadRequest content =
+    Helper.make HttpStatusCode.BadRequest content
 
   /// HTTP status 401
-  let Unauthorized value =
-    Helper.make HttpStatusCode.Unauthorized value
+  let Unauthorized content =
+    Helper.make HttpStatusCode.Unauthorized content
 
   /// HTTP status 402
-  let PaymentRequired value =
-    Helper.make HttpStatusCode.PaymentRequired value
+  let PaymentRequired content =
+    Helper.make HttpStatusCode.PaymentRequired content
 
   /// HTTP status 403
-  let Forbidden value =
-    Helper.make HttpStatusCode.Forbidden value
+  let Forbidden content =
+    Helper.make HttpStatusCode.Forbidden content
 
   /// HTTP status 404
-  let NotFound value = 
-    Helper.make HttpStatusCode.NotFound value
+  let NotFound content = 
+    Helper.make HttpStatusCode.NotFound content
 
   /// HTTP status 405
-  let MethodNotAllowed value =
-    Helper.make HttpStatusCode.MethodNotAllowed value
+  let MethodNotAllowed content =
+    Helper.make HttpStatusCode.MethodNotAllowed content
 
   /// HTTP status 406
-  let NotAcceptable value =
-    Helper.make HttpStatusCode.NotAcceptable value
+  let NotAcceptable content =
+    Helper.make HttpStatusCode.NotAcceptable content
 
   /// HTTP status 407
-  let ProxyAuthenticationRequired value = 
-    Helper.make HttpStatusCode.ProxyAuthenticationRequired value
+  let ProxyAuthenticationRequired content = 
+    Helper.make HttpStatusCode.ProxyAuthenticationRequired content
 
   /// HTTP status 408
-  let RequestTimeout value = 
-    Helper.make HttpStatusCode.RequestTimeout value
+  let RequestTimeout content = 
+    Helper.make HttpStatusCode.RequestTimeout content
 
   /// HTTP status 409
-  let Conflict value =
-    Helper.make HttpStatusCode.Conflict value
+  let Conflict content =
+    Helper.make HttpStatusCode.Conflict content
 
   /// HTTP status 410
-  let Gone value =
-    Helper.make HttpStatusCode.Gone value
+  let Gone content =
+    Helper.make HttpStatusCode.Gone content
 
   /// HTTP status 411
-  let LengthRequired value =
-    Helper.make HttpStatusCode.LengthRequired value
+  let LengthRequired content =
+    Helper.make HttpStatusCode.LengthRequired content
 
   /// HTTP status 412
-  let PreconditionFailed value =
-    Helper.make HttpStatusCode.PreconditionFailed value
+  let PreconditionFailed content =
+    Helper.make HttpStatusCode.PreconditionFailed content
 
   /// HTTP status 413
-  let RequestEntityTooLarge value =
-    Helper.make HttpStatusCode.RequestEntityTooLarge value
+  let RequestEntityTooLarge content =
+    Helper.make HttpStatusCode.RequestEntityTooLarge content
 
   /// HTTP status 414
-  let RequestUriTooLong value =
-    Helper.make HttpStatusCode.RequestUriTooLong value
+  let RequestUriTooLong content =
+    Helper.make HttpStatusCode.RequestUriTooLong content
 
   /// HTTP status 415
-  let UnsupportedMediaType value = 
-    Helper.make HttpStatusCode.UnsupportedMediaType value
+  let UnsupportedMediaType content = 
+    Helper.make HttpStatusCode.UnsupportedMediaType content
 
   /// HTTP status 416
-  let RequestedRangeNotSatisfiable value = 
-    Helper.make HttpStatusCode.RequestedRangeNotSatisfiable value
+  let RequestedRangeNotSatisfiable content = 
+    Helper.make HttpStatusCode.RequestedRangeNotSatisfiable content
 
   /// HTTP status 417
-  let ExpectationFailed value =
-    Helper.make HttpStatusCode.ExpectationFailed value
+  let ExpectationFailed content =
+    Helper.make HttpStatusCode.ExpectationFailed content
 
   /// HTTP status 426
-  let UpgradeRequired value =
-    Helper.make (unbox<HttpStatusCode> (box 426)) value
+  let UpgradeRequired content =
+    Helper.make (unbox<HttpStatusCode> (box 426)) content
 
   /// HTTP status 500
-  let InternalServerError value =
-    Helper.make HttpStatusCode.InternalServerError value
+  let InternalServerError content =
+    Helper.make HttpStatusCode.InternalServerError content
 
   /// HTTP status 501
-  let NotImplemented value =
-    Helper.make HttpStatusCode.NotImplemented value
+  let NotImplemented content =
+    Helper.make HttpStatusCode.NotImplemented content
 
   /// HTTP status 502
-  let BadGateway value =
-    Helper.make HttpStatusCode.BadGateway value
+  let BadGateway content =
+    Helper.make HttpStatusCode.BadGateway content
 
   /// HTTP status 503
-  let ServiceUnavailable value = 
-    Helper.make HttpStatusCode.ServiceUnavailable value
+  let ServiceUnavailable content = 
+    Helper.make HttpStatusCode.ServiceUnavailable content
 
   /// HTTP status 504
-  let GatewayTimeout value = 
-    Helper.make HttpStatusCode.GatewayTimeout value
+  let GatewayTimeout content = 
+    Helper.make HttpStatusCode.GatewayTimeout content
 
   /// HTTP status 505
-  let HttpVersionNotSupported value = 
-    Helper.make HttpStatusCode.HttpVersionNotSupported value
+  let HttpVersionNotSupported content = 
+    Helper.make HttpStatusCode.HttpVersionNotSupported content

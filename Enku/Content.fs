@@ -24,52 +24,52 @@ open System.Text
 module Content =
 
   // set HttpContent
-  let http value = fun statusCode ->
+  let http value = Content(fun statusCode ->
     Response(fun req -> 
       let res = req.CreateResponse(statusCode)
       res.Content <- value
-      res)
+      res))
 
   /// make StreamContent
-  let stream value = fun statusCode ->
+  let stream value = Content(fun statusCode ->
     Response(fun req -> 
       let res = req.CreateResponse(statusCode)
       res.Content <- new StreamContent(value)
-      res)
+      res))
 
   /// make ByteArrayContent
-  let byteArray value = fun statusCode ->
+  let byteArray value = Content(fun statusCode ->
     Response(fun req -> 
       let res = req.CreateResponse(statusCode)
       res.Content <- new ByteArrayContent(value)
-      res)
+      res))
 
   // make error response
-  let error (exn: exn) = fun statusCode ->
-    Response(fun req -> req.CreateErrorResponse(statusCode, exn))
+  let error (exn: exn) = Content(fun statusCode ->
+    Response(fun req -> req.CreateErrorResponse(statusCode, exn)))
 
   /// content negotiation
-  let negotiation value = fun statusCode ->
-    Response(fun req -> req.CreateResponse(statusCode, value))
+  let negotiation value = Content(fun statusCode ->
+    Response(fun req -> req.CreateResponse(statusCode, value)))
 
   /// application/json
-  let json value = fun statusCode ->
-    Response(fun req -> req.CreateResponse(statusCode, value, "application/json"))
+  let json value = Content(fun statusCode ->
+    Response(fun req -> req.CreateResponse(statusCode, value, "application/json")))
 
   /// application/xml
-  let xml value = fun statusCode ->
-    Response(fun req -> req.CreateResponse(statusCode, value, "application/xml"))
+  let xml value = Content(fun statusCode ->
+    Response(fun req -> req.CreateResponse(statusCode, value, "application/xml")))
 
   /// text/html
-  let html value = fun statusCode ->
+  let html value = Content(fun statusCode ->
     Response(fun req -> 
       let res = req.CreateResponse(statusCode)
       res.Content <- new StringContent(value, null, "text/html")
-      res)
+      res))
 
   /// text/plain
-  let plain value = fun statusCode ->
+  let plain value = Content(fun statusCode ->
     Response(fun req -> 
       let res = req.CreateResponse(statusCode)
       res.Content <- new StringContent(value, null, "text/plain")
-      res)
+      res))

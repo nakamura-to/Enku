@@ -42,11 +42,8 @@ open Newtonsoft.Json.Serialization
 open Enku
 
 // configuration
-let baseAddress = new Uri("http://localhost:9090/")
-let config = 
-  new HttpSelfHostConfiguration(
-    baseAddress, 
-    IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always)
+let config = new HttpSelfHostConfiguration("http://localhost:9090/")
+config.IncludeErrorDetailPolicy <- IncludeErrorDetailPolicy.Always
 config.Formatters.JsonFormatter.SerializerSettings.ContractResolver <- CamelCasePropertyNamesContractResolver()
 let route = Routing.route config
 
@@ -54,24 +51,22 @@ let route = Routing.route config
 route "example" <| fun _ -> 
   [
     get, fun req -> async {
-      return Response.Ok "Accept GET" MediaType.Neg }
+      return Content.json "Accept GET" |> Response.Ok }
 
     put <|> post, fun req -> async {
       let! content = Request.asyncReadAsString req
-      return Response.Ok ("Accept PUT or POST: content=" + content) MediaType.Neg }
+      return Content.json ("Accept PUT or POST: content=" + content) |> Response.Ok }
 
     any, fun req -> async {
-      return Response.Ok "Accept any HTTP methods" MediaType.Neg }
+      return Content.json "Accept any HTTP methods" |> Response.Ok }
   ], 
-  fun req e -> Response.InternalServerError e MediaType.Neg
+  fun req e -> Content.error e |> Response.InternalServerError
 
 // run server
-async {
-  use server = new HttpSelfHostServer(config)
-  do! Async.AwaitTask <| server.OpenAsync().ContinueWith(fun _ -> ())
-  printfn "Server running at http://localhost:9090/"
-  Console.ReadKey () |> ignore }
-|> Async.RunSynchronously
+let server = new HttpSelfHostServer(config)
+server.OpenAsync().Wait()
+printfn "Server running at http://localhost:9090/"
+Console.ReadKey () |> ignore
 ```
 
 Access
@@ -103,16 +98,16 @@ module WebApiConfig =
     route "example" <| fun _ -> 
       [
         get, fun req -> async {
-          return Response.Ok "Accept GET" MediaType.Neg }
+          return Content.json "Accept GET" |> Response.Ok }
 
         put <|> post, fun req -> async {
           let! content = Request.asyncReadAsString req
-          return Response.Ok ("Accept PUT or POST: content=" + content) MediaType.Neg }
+          return Content.json ("Accept PUT or POST: content=" + content) |> Response.Ok }
 
         any, fun req -> async {
-          return Response.Ok "Accept any HTTP methods" MediaType.Neg }
+          return Content.json "Accept any HTTP methods" |> Response.Ok }
       ], 
-      fun req e -> Response.InternalServerError e MediaType.Neg
+      fun req e -> Content.error e |> Response.InternalServerError
 ```
 
 In Global.asax, use the above WebApiConfig module instead of the original WebApiConfig class.

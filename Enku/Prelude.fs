@@ -12,6 +12,7 @@
 
 namespace Enku
 
+open System.Net
 open System.Net.Http
 
 [<AutoOpen>]
@@ -23,6 +24,8 @@ module Prelude =
   type RequestHeaders = RequestHeaders of HttpRequestMessage
 
   type Response = Response of (HttpRequestMessage -> HttpResponseMessage)
+
+  type Content = Content of (HttpStatusCode -> Response)
 
   type ErrorHandler = (Request -> exn -> Response)
 

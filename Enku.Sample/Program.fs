@@ -56,20 +56,20 @@ let route = Routing.route config
 route "path/1/{?id}" <| fun _ ->
   [
     post, fun req -> async {
-      return Response.Ok <| Content.json {Name = "post"; Age = 20}}
+      return Content.json {Name = "post"; Age = 20} |> Response.Ok }
 
     get, fun req -> async {
-      return Response.Ok <| Content.json {Name = "get"; Age = 20}}
+      return Content.json {Name = "get"; Age = 20} |> Response.Ok }
   ],
-  fun req e -> Response.InternalServerError <| Content.error e
+  fun req e -> Content.error e |> Response.InternalServerError
 
 // action alternatives
 route "path/2" <| fun _ ->
   [ 
     get <|> post, fun req -> async {
-      return Response.Ok <| Content.json {Name = "foo"; Age = 20} } 
+      return Content.json {Name = "foo"; Age = 20} |> Response.Ok } 
   ],
-  fun req e -> Response.InternalServerError <| Content.error e
+  fun req e -> Content.error e |> Response.InternalServerError
 
 // read request header
 route "path/3" <| fun _ ->
@@ -77,29 +77,29 @@ route "path/3" <| fun _ ->
     get, fun req -> async {
       let host = req |> Request.headers |> RequestHeaders.Host
       let host = match host with Some v -> v | _ -> ""
-      return Response.Ok <| Content.json host} 
+      return Content.json host |> Response.Ok } 
   ],
-  fun req e -> Response.InternalServerError <| Content.error e
+  fun req e -> Content.error e |> Response.InternalServerError
 
 // write to response header
 route "path/4" <| fun _ -> 
   [
     get, fun req -> async {
-      return 
-        Response.Ok <| Content.json ""
-        |> Response.headers
-          [ ResponseHeaders.Location <=> Uri("http://www.google.com") ] } 
+      return Content.json ""
+      |> Response.Ok
+      |> Response.headers
+        [ ResponseHeaders.Location <=> Uri("http://www.google.com") ] } 
   ],
-  fun req e -> Response.InternalServerError <| Content.error e
+  fun req e -> Content.error e |> Response.InternalServerError
 
 // read string content
 route "path/5" <| fun _ -> 
   [
     post, fun req -> async {
-      let! content = Request.asyncReadAsString req
-      return Response.Ok <| Content.plain content }
+      let! value = Request.asyncReadAsString req
+      return Content.plain value |> Response.Ok }
   ],
-  fun req e -> Response.InternalServerError <| Content.error e
+  fun req e -> Content.error e |> Response.InternalServerError
 
 // read form content
 route "path/6" <| fun _ -> 
@@ -111,10 +111,10 @@ route "path/6" <| fun _ ->
       let bbb = vc.Eval(form, "bbb", Validator.head <+> Validator.required)
       let ccc = vc.Eval(form, "ccc", Validator.head <+> Validator.required)
       match vc.Errors with
-      | [] -> return Response.Ok <| Content.json (aaa.Value + bbb.Value + ccc.Value)
-      | h :: _ -> return Response.BadRequest <| Content.negotiation h }
+      | [] -> return Content.json (aaa.Value + bbb.Value + ccc.Value) |> Response.Ok
+      | h :: _ -> return Content.negotiation h |> Response.BadRequest }
   ],
-  fun req e -> Response.InternalServerError <| Content.error e
+  fun req e -> Content.error e |> Response.InternalServerError
 
 // intercept controller
 route "path/7/{?id}" <| fun _ -> 
@@ -123,12 +123,12 @@ route "path/7/{?id}" <| fun _ ->
     get, fun req -> async {
       let id = Request.routeValue "id" req
       let id = match id with Some v -> v | _ -> ""
-      return 
-        Response.Ok <| Content.json {Name = "get"; Age = 20}
-        |> Response.headers 
-            [ ResponseHeaders.Age <=> TimeSpan(12, 13, 14) ] }
+      return Content.json {Name = "get"; Age = 20}
+      |> Response.Ok
+      |> Response.headers 
+        [ ResponseHeaders.Age <=> TimeSpan(12, 13, 14) ] }
   ],
-  fun req e -> Response.InternalServerError <| Content.error e
+  fun req e -> Content.error e |> Response.InternalServerError
 
 // validation error
 route "path/8" <| fun _ -> 
@@ -140,16 +140,16 @@ route "path/8" <| fun _ ->
       let age = vc.Eval(<@ person.Age @>, Validator.range 15 20 <+> Validator.required)
       match vc.Errors with
       | [] -> 
-        return Response.Ok <| Content.json person.Name
+        return Content.json person.Name |> Response.Ok
       | h :: _ -> 
-        return Response.BadRequest <| Content.json h}
+        return Content.json h |> Response.BadRequest}
   ],
   fun req e -> 
     match e with
     | :? Request.FormatError ->
-      Response.BadRequest <| Content.json "format error."
+      Content.json "format error." |> Response.BadRequest
     | _ ->
-      Response.InternalServerError <| Content.error e
+      Content.error e |> Response.InternalServerError
 
 type ClinetHandler() =
   inherit HttpClientHandler()
