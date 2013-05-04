@@ -106,17 +106,13 @@ route "path/6" <| fun _ ->
   [
     post, fun req -> async {
       let! form = Request.asyncReadAsForm req
-      match form with
-      | Result.Error (h, _) ->
-        return Response.BadRequest h MediaType.Neg
-      | Result.Ok form ->
-        let vc = Validation.Context()
-        let aaa = vc.Eval(form, "aaa", Validator.head <+> Validator.required)
-        let bbb = vc.Eval(form, "bbb", Validator.head <+> Validator.required)
-        let ccc = vc.Eval(form, "ccc", Validator.head <+> Validator.required)
-        match vc.Errors with
-        | [] -> return Response.Ok (aaa.Value + bbb.Value + ccc.Value) MediaType.json
-        | h :: _ -> return Response.BadRequest h MediaType.Neg }
+      let vc = Validation.Context()
+      let aaa = vc.Eval(form, "aaa", Validator.head <+> Validator.required)
+      let bbb = vc.Eval(form, "bbb", Validator.head <+> Validator.required)
+      let ccc = vc.Eval(form, "ccc", Validator.head <+> Validator.required)
+      match vc.Errors with
+      | [] -> return Response.Ok (aaa.Value + bbb.Value + ccc.Value) MediaType.json
+      | h :: _ -> return Response.BadRequest h MediaType.Neg }
   ],
   fun req e -> Response.InternalServerError e MediaType.Neg
 
@@ -136,22 +132,17 @@ route "path/7/{?id}" <| fun _ ->
 
 // validation error
 route "path/8" <| fun _ -> 
-  let validate = function
-    | Result.Error _ ->
-      Result.Error "format error."
-    | Result.Ok person ->
+  [ 
+    post, fun req -> async {
+      let! person = Request.asyncReadAs<Person> req
       let vc = Validation.Context()
       let name = vc.Eval(<@ person.Name @>, Validator.required)
       let age = vc.Eval(<@ person.Age @>, Validator.range 15 20 <+> Validator.required)
       match vc.Errors with
-      | [] -> Result.Ok <| { Name = name.Value; Age = age.Value }
-      | h :: _ -> Result.Error h
-  [ 
-    post, fun req -> async {
-      let! person = Request.asyncReadAs<Person> req
-      match validate person with
-      | Result.Ok person -> return Response.Ok person.Name MediaType.json
-      | Result.Error message -> return Response.BadRequest message MediaType.Neg }
+      | [] -> 
+        return Response.Ok person.Name MediaType.json
+      | h :: _ -> 
+        return Response.BadRequest h MediaType.json }
   ],
   fun req e -> Response.InternalServerError e MediaType.Neg
 

@@ -61,20 +61,19 @@ module Request =
     let logger = Helper.FormatterLogger(errors)
     let! result = Async.AwaitTask <| req.Content.ReadAsAsync<'T>(formatters, logger)
     let errors = Seq.toList errors
-    match errors with
-    | [] -> 
-      if box result = null then
-        return Result.Error (UnknownContentTypeError() :> exn, [])
-      else
-        return Result.Ok result
-    | head :: tail -> 
-      return Result.Error (head, tail) }
+    let result =
+      match errors with
+      | [] -> 
+        if box result = null then
+          raise <| UnknownContentTypeError()
+        result
+      | head :: tail -> 
+        raise head
+    return result }
 
   let asyncReadAsForm req = async {
-    let! result = asyncReadAs<FormDataCollection> req
-    match result with
-    | Result.Ok form -> return Result.Ok <| Helper.toKeyValuesMap form
-    | Result.Error (head, tail) -> return Result.Error (head, tail) }
+    let! form = asyncReadAs<FormDataCollection> req
+    return Helper.toKeyValuesMap form }
 
   let readAsString req =
     asyncReadAsString req
