@@ -15,6 +15,7 @@ namespace Enku
 open System
 open System.Net.Http
 open System.Net.Http.Formatting
+open System.Web.Http.Routing
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Request =
@@ -115,3 +116,11 @@ module Request =
   let version (Request req) = req.Version
 
   let headers (Request req) = RequestHeaders req
+
+  let link name values (Request req) =
+    let urlHelper = UrlHelper(req)
+    urlHelper.Link(name, values)
+
+  let route name values (Request req) =
+    let urlHelper = UrlHelper(req)
+    urlHelper.Route(name, values)
