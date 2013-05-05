@@ -46,19 +46,26 @@ module Content =
 
   // make error response
   let error (exn: exn) = Content(fun statusCode ->
-    Response(fun req -> req.CreateErrorResponse(statusCode, exn)))
+    Response(fun req -> 
+      let res = req.CreateErrorResponse(statusCode, exn)
+      res))
 
   /// content negotiation
   let negotiation value = Content(fun statusCode ->
-    Response(fun req -> req.CreateResponse(statusCode, value)))
+    Response(fun req -> 
+      req.CreateResponse(statusCode, value)))
 
   /// application/json
   let json value = Content(fun statusCode ->
-    Response(fun req -> req.CreateResponse(statusCode, value, "application/json")))
+    Response(fun req -> 
+      let res = req.CreateResponse(statusCode, value, "application/json")
+      res))
 
   /// application/xml
   let xml value = Content(fun statusCode ->
-    Response(fun req -> req.CreateResponse(statusCode, value, "application/xml")))
+    Response(fun req -> 
+      let res = req.CreateResponse(statusCode, value, "application/xml")
+      res))
 
   /// text/html
   let html value = Content(fun statusCode ->

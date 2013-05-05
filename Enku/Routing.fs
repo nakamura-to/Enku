@@ -54,10 +54,12 @@ module Routing =
           let computation = async {
             try
               let! (Response builder) = action req
-              return builder request
+              let res = builder request
+              return res
             with e ->
               let (Response builder) = errorHandler req e
-              return builder request }
+              let res = builder request
+              return res }
           Async.StartAsTask(computation, cancellationToken = token) }
 
 
