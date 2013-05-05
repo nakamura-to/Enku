@@ -72,11 +72,11 @@ module Routing =
           Async.StartAsTask(computation, cancellationToken = token) }
 
   let route (config: HttpConfiguration) (path: string) (controller: Controller) =
-    let path, defaults = Helper.parsePath path
+    let routeTemplate, defaults = Helper.parsePath path
     let handler = Helper.makeHandler controller
     config.Routes.MapHttpRoute(
       name = path,
-      routeTemplate = path,
+      routeTemplate = routeTemplate,
       defaults = defaults,
       constraints = null,
       handler = handler) |> ignore
